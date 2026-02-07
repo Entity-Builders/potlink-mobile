@@ -150,6 +150,56 @@ export const PotDetailScreen = ({
           )}
         </View>
 
+        {/* Location & Weather Section */}
+        {pot.latitude && pot.longitude && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.sectionTitle}>📍 Location & Climate</Text>
+            <View style={styles.detailsGrid}>
+              {pot.address && (
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Address</Text>
+                  <Text style={styles.detailValue}>{pot.address}</Text>
+                </View>
+              )}
+
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>GPS Coordinates</Text>
+                <Text style={styles.detailValue}>
+                  {pot.latitude.toFixed(6)}, {pot.longitude.toFixed(6)}
+                </Text>
+              </View>
+
+              {pot.temperature && (
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>
+                    Temperature at Registration
+                  </Text>
+                  <Text style={styles.detailValue}>🌡️ {pot.temperature}°C</Text>
+                </View>
+              )}
+
+              {pot.humidity && (
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>
+                    Humidity at Registration
+                  </Text>
+                  <Text style={styles.detailValue}>💧 {pot.humidity}%</Text>
+                </View>
+              )}
+
+              {pot.weather_condition && (
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Weather Conditions</Text>
+                  <Text style={styles.detailValue}>
+                    ☁️ {pot.weather_description || pot.weather_condition}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
         {/* Action Buttons */}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.editButton} onPress={onEdit}>
@@ -217,6 +267,12 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#e0e0e0',
     marginVertical: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
   },
   detailsGrid: {
     gap: 16,
