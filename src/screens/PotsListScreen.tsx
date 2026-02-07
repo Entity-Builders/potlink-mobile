@@ -11,7 +11,15 @@ import {
 import { getUserPots } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 
-export const PotsListScreen = ({ onAddPot }: { onAddPot: () => void }) => {
+interface PotsListScreenProps {
+  onAddPot: () => void;
+  onPotPress: (pot: Pot) => void;
+}
+
+export const PotsListScreen = ({
+  onAddPot,
+  onPotPress,
+}: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +35,11 @@ export const PotsListScreen = ({ onAddPot }: { onAddPot: () => void }) => {
   }, []);
 
   const renderPotCard = ({ item }: { item: Pot }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => onPotPress(item)}
+      activeOpacity={0.7}
+    >
       {item.photo_url ? (
         <Image source={{ uri: item.photo_url }} style={styles.cardImage} />
       ) : (
@@ -48,7 +60,7 @@ export const PotsListScreen = ({ onAddPot }: { onAddPot: () => void }) => {
           <Text style={styles.cardMetaText}>💧 {item.moisture_threshold}%</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderEmptyState = () => (
