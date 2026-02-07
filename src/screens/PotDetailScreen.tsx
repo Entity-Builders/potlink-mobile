@@ -25,6 +25,7 @@ export const PotDetailScreen = ({
   onDeleted,
 }: PotDetailScreenProps) => {
   const handleDelete = () => {
+    console.log('Delete button clicked for pot:', pot.id, pot.name);
     Alert.alert(
       'Delete Pot',
       `Are you sure you want to delete "${pot.name}"? This cannot be undone.`,
@@ -34,6 +35,7 @@ export const PotDetailScreen = ({
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            console.log('User confirmed delete');
             const success = await deletePot(pot.id);
             if (success) {
               Alert.alert('Success', 'Pot deleted successfully', [
