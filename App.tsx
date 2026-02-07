@@ -3,20 +3,49 @@ import { StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@eb-packages/core';
 import { getHealthStatus, Plant } from '@eb-packages/garden';
 import { useEffect, useState } from 'react';
+import { AuthScreen } from './src/screens/AuthScreen';
 
 export default function App() {
   const [status, setStatus] = useState<string>('Checking sensors...');
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     // Basic verification that Supabase client is initialized
     console.log('Supabase initialized:', !!supabase);
 
     // Basic verification of Garden logic
-    const currentMoisture = 45;
-    const threshold = 50;
-    const health = getHealthStatus(currentMoisture, threshold);
-    setStatus(`Moisture: ${currentMoisture}% - Status: ${health}`);
-  }, []);
+    if (session) {
+      const currentMoisture = 45;
+      const threshold = 50;
+      const health = getHealthStatus(currentMoisture, threshold);
+      setStatus(`Moisture: ${currentMoisture}% - Status: ${health}`);
+    }
+  }, [session]);
+
+  if (!session) {
+    return (
+      <View style={styles.container}>
+        <AuthScreen />
+        <StatusBar style='auto' />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -24,6 +53,15 @@ export default function App() {
       <Text style={styles.subtitle}>Garden Domain Connected</Text>
       <View style={styles.card}>
         <Text>{status}</Text>
+      </View>
+      <View style={styles.card}>
+        <Text>Logged in as: {session.user.email}</Text>
+        <Text
+          style={{ color: 'blue', marginTop: 10 }}
+          onPress={() => supabase.auth.signOut()}
+        >
+          Sign Out
+        </Text>
       </View>
       <StatusBar style='auto' />
     </View>
@@ -57,5 +95,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 20,
   },
 });
