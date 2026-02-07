@@ -1,13 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@eb-packages/core';
-import { getHealthStatus, Plant } from '@eb-packages/garden';
 import { useEffect, useState } from 'react';
 import { AuthScreen } from './src/screens/AuthScreen';
+import { PotsListScreen } from './src/screens/PotsListScreen';
+import { PotRegistrationScreen } from './src/screens/PotRegistrationScreen';
+
+type Screen = 'list' | 'register';
 
 export default function App() {
-  const [status, setStatus] = useState<string>('Checking sensors...');
   const [session, setSession] = useState<any>(null);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('list');
 
   useEffect(() => {
     // Check initial session
@@ -20,23 +23,12 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      // Reset to list screen when logging in/out
+      setCurrentScreen('list');
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    // Basic verification that Supabase client is initialized
-    console.log('Supabase initialized:', !!supabase);
-
-    // Basic verification of Garden logic
-    if (session) {
-      const currentMoisture = 45;
-      const threshold = 50;
-      const health = getHealthStatus(currentMoisture, threshold);
-      setStatus(`Moisture: ${currentMoisture}% - Status: ${health}`);
-    }
-  }, [session]);
 
   if (!session) {
     return (
@@ -49,20 +41,11 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🌱 PotLink Mobile</Text>
-      <Text style={styles.subtitle}>Garden Domain Connected</Text>
-      <View style={styles.card}>
-        <Text>{status}</Text>
-      </View>
-      <View style={styles.card}>
-        <Text>Logged in as: {session.user.email}</Text>
-        <Text
-          style={{ color: 'blue', marginTop: 10 }}
-          onPress={() => supabase.auth.signOut()}
-        >
-          Sign Out
-        </Text>
-      </View>
+      {currentScreen === 'list' ? (
+        <PotsListScreen onAddPot={() => setCurrentScreen('register')} />
+      ) : (
+        <PotRegistrationScreen onSuccess={() => setCurrentScreen('list')} />
+      )}
       <StatusBar style='auto' />
     </View>
   );
@@ -72,29 +55,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#2e7d32',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 20,
   },
 });
