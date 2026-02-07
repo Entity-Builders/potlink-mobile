@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import type { Pot } from '@eb-packages/garden';
 import { deletePot } from '@eb-packages/logic';
@@ -24,8 +25,28 @@ export const PotDetailScreen = ({
   onEdit,
   onDeleted,
 }: PotDetailScreenProps) => {
-  const handleDelete = () => {
+  const handleDelete = async () => {
     console.log('Delete button clicked for pot:', pot.id, pot.name);
+
+    // For web, use window.confirm as fallback
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${pot.name}"? This cannot be undone.`,
+      );
+      if (!confirmed) return;
+
+      console.log('User confirmed delete');
+      const success = await deletePot(pot.id);
+      if (success) {
+        alert('Pot deleted successfully');
+        onDeleted();
+      } else {
+        alert('Failed to delete pot. Please try again.');
+      }
+      return;
+    }
+
+    // For native platforms
     Alert.alert(
       'Delete Pot',
       `Are you sure you want to delete "${pot.name}"? This cannot be undone.`,
