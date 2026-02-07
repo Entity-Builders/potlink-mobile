@@ -25,6 +25,28 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow PotLink to access your microphone for voice input functionality.",
+          "speechRecognitionPermission": "Allow PotLink to use speech recognition to transcribe your voice input."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PotLink to access your photos to add images to your pots.",
+          "cameraPermission": "Allow PotLink to access your camera to take photos of your pots."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow PotLink to use your location to record where your pots are located and fetch local weather data."
+        }
+      ]
+    ]
   }
 }

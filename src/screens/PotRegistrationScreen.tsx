@@ -13,6 +13,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { createPot } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
+import { VoiceInput } from '@eb-packages/ui';
 
 export const PotRegistrationScreen = ({
   onSuccess,
@@ -27,6 +28,7 @@ export const PotRegistrationScreen = ({
   >('seeds');
   const [moistureThreshold, setMoistureThreshold] = useState(50);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -85,6 +87,7 @@ export const PotRegistrationScreen = ({
     if (!validateForm()) return;
 
     setLoading(true);
+    setLoadingStatus('Capturing location and weather...');
     try {
       const potData: PotFormData = {
         name: name.trim(),
@@ -94,6 +97,7 @@ export const PotRegistrationScreen = ({
         photo_uri: photoUri || undefined,
       };
 
+      setLoadingStatus('Uploading and saving pot...');
       const result = await createPot(potData);
 
       if (result) {
@@ -114,6 +118,7 @@ export const PotRegistrationScreen = ({
       Alert.alert('Error', 'An unexpected error occurred.');
     } finally {
       setLoading(false);
+      setLoadingStatus('');
     }
   };
 
@@ -180,13 +185,19 @@ export const PotRegistrationScreen = ({
           />
 
           <Text style={styles.label}>Plant Species *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder='e.g., Tomato, Basil, Cactus'
-            value={species}
-            onChangeText={setSpecies}
-            editable={!loading}
-          />
+          <View style={styles.speciesInputContainer}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder='e.g., Tomato, Basil, Cactus'
+              value={species}
+              onChangeText={setSpecies}
+              editable={!loading}
+            />
+            <VoiceInput
+              onResult={(text) => setSpecies(text)}
+              style={styles.voiceButton}
+            />
+          </View>
 
           <Text style={styles.label}>Initial State</Text>
           <View style={styles.stateButtons}>
@@ -242,7 +253,12 @@ export const PotRegistrationScreen = ({
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color='#fff' />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color='#fff' />
+              {loadingStatus ? (
+                <Text style={styles.loadingStatusText}>{loadingStatus}</Text>
+              ) : null}
+            </View>
           ) : (
             <Text style={styles.submitButtonText}>Register Pot 🌱</Text>
           )}
@@ -337,6 +353,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  speciesInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  voiceButton: {
+    width: 44,
+    height: 44,
+  },
   stateButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -403,5 +428,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingStatusText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
