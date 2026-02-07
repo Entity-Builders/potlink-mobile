@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { createPot } from '@eb-packages/logic';
+import { createPot, extractPotMetadata } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { VoiceInput } from '@eb-packages/ui';
 
@@ -23,6 +23,8 @@ export const PotRegistrationScreen = ({
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
+  const [seedType, setSeedType] = useState('');
+  const [notes, setNotes] = useState('');
   const [initialState, setInitialState] = useState<
     'seeds' | 'seedling' | 'young' | 'mature'
   >('seeds');
@@ -92,6 +94,8 @@ export const PotRegistrationScreen = ({
       const potData: PotFormData = {
         name: name.trim(),
         species: species.trim(),
+        seed_type: seedType.trim() || undefined,
+        notes: notes.trim() || undefined,
         initial_state: initialState,
         moisture_threshold: moistureThreshold,
         photo_uri: photoUri || undefined,
@@ -108,6 +112,8 @@ export const PotRegistrationScreen = ({
         setPhotoUri(null);
         setName('');
         setSpecies('');
+        setSeedType('');
+        setNotes('');
         setInitialState('seeds');
         setMoistureThreshold(50);
       } else {
@@ -194,10 +200,35 @@ export const PotRegistrationScreen = ({
               editable={!loading}
             />
             <VoiceInput
-              onResult={(text) => setSpecies(text)}
+              onResult={async (text) => {
+                const metadata = await extractPotMetadata(text);
+                if (metadata.name) setName(metadata.name);
+                if (metadata.species) setSpecies(metadata.species);
+                if (metadata.seed_type) setSeedType(metadata.seed_type);
+                if (metadata.notes) setNotes(metadata.notes);
+              }}
               style={styles.voiceButton}
             />
           </View>
+
+          <Text style={styles.label}>Seed Type (Optional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder='e.g., Heirloom, Hybrid'
+            value={seedType}
+            onChangeText={setSeedType}
+            editable={!loading}
+          />
+
+          <Text style={styles.label}>Notes (Optional)</Text>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            placeholder='Any additional details...'
+            value={notes}
+            onChangeText={setNotes}
+            editable={!loading}
+            multiline
+          />
 
           <Text style={styles.label}>Initial State</Text>
           <View style={styles.stateButtons}>
