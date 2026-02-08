@@ -9,8 +9,11 @@ import { PotRegistrationScreen } from './src/screens/PotRegistrationScreen';
 import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
 import type { Pot } from '@eb-packages/garden';
+import { NotificationService } from './src/services/NotificationService';
 
-type Screen = 'list' | 'register' | 'detail' | 'edit';
+import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
+
+type Screen = 'list' | 'register' | 'detail' | 'edit' | 'care-settings';
 
 interface NavigationState {
   screen: Screen;
@@ -39,6 +42,13 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Request notification permissions on mount
+    NotificationService.registerForPushNotificationsAsync().then((token) => {
+      if (token) console.log('Push token:', token);
+    });
   }, []);
 
   if (!session) {
@@ -76,6 +86,9 @@ export default function App() {
               setNavigation({ screen: 'edit', pot: navigation.pot })
             }
             onDeleted={() => setNavigation({ screen: 'list' })}
+            onCareSettings={() =>
+              setNavigation({ screen: 'care-settings', pot: navigation.pot })
+            }
           />
         ) : null;
 
@@ -88,6 +101,16 @@ export default function App() {
             }
             onSaved={(updatedPot) =>
               setNavigation({ screen: 'detail', pot: updatedPot })
+            }
+          />
+        ) : null;
+
+      case 'care-settings':
+        return navigation.pot ? (
+          <CareSettingsScreen
+            pot={navigation.pot}
+            onBack={() =>
+              setNavigation({ screen: 'detail', pot: navigation.pot })
             }
           />
         ) : null;

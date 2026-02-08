@@ -12,12 +12,14 @@ import {
 import type { Pot } from '@eb-packages/garden';
 import { deletePot } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
+import { CareScheduleList } from '../components/Care/CareScheduleList';
 
 interface PotDetailScreenProps {
   pot: Pot;
   onBack: () => void;
   onEdit: () => void;
   onDeleted: () => void;
+  onCareSettings: () => void;
 }
 
 export const PotDetailScreen = ({
@@ -25,6 +27,7 @@ export const PotDetailScreen = ({
   onBack,
   onEdit,
   onDeleted,
+  onCareSettings,
 }: PotDetailScreenProps) => {
   const handleDelete = async () => {
     console.log('Delete button clicked for pot:', pot.id, pot.name);
@@ -223,6 +226,17 @@ export const PotDetailScreen = ({
             </>
           )}
 
+          <View style={styles.divider} />
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Care Schedule</Text>
+            <TouchableOpacity onPress={onCareSettings}>
+              <Text style={styles.linkButton}>⚙️ Settings</Text>
+            </TouchableOpacity>
+          </View>
+
+          <CareScheduleList potId={pot.id} />
+
           {/* Action Buttons */}
           <View style={styles.actions}>
             <TouchableOpacity style={styles.editButton} onPress={onEdit}>
@@ -350,5 +364,16 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  linkButton: {
+    color: '#2e7d32',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
