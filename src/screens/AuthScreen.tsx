@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { AuthScreen as SharedAuthScreen } from '@eb-packages/ui';
+import { StyleSheet } from 'react-native';
+import { AuthScreen as SharedAuthScreen, Screen } from '@eb-packages/ui';
 
 export const AuthScreen = () => {
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container}>
       <SharedAuthScreen title='PotLink' themeColor='#2e7d32' />
-    </View>
+    </Screen>
   );
 };
 

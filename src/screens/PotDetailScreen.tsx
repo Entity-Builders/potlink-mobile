@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import type { Pot } from '@eb-packages/garden';
 import { deletePot } from '@eb-packages/logic';
+import { Screen } from '@eb-packages/ui';
 
 interface PotDetailScreenProps {
   pot: Pot;
@@ -90,128 +91,137 @@ export const PotDetailScreen = ({
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Photo */}
-      {pot.photo_url ? (
-        <Image source={{ uri: pot.photo_url }} style={styles.photo} />
-      ) : (
-        <View style={styles.photoPlaceholder}>
-          <Text style={styles.photoPlaceholderText}>🌱</Text>
-        </View>
-      )}
-
-      {/* Pot Information */}
-      <View style={styles.content}>
-        <Text style={styles.name}>{pot.name}</Text>
-        <Text style={styles.species}>{pot.species}</Text>
-
-        <View style={styles.divider} />
-
-        {/* Details Grid */}
-        <View style={styles.detailsGrid}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>State</Text>
-            <Text style={styles.detailValue}>
-              {getStateLabel(pot.initial_state)}
-            </Text>
-          </View>
-
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Moisture Threshold</Text>
-            <Text style={styles.detailValue}>💧 {pot.moisture_threshold}%</Text>
-          </View>
-
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Registered</Text>
-            <Text style={styles.detailValue}>
-              {formatDate(pot.registered_at)}
-            </Text>
-          </View>
-
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Day of Year</Text>
-            <Text style={styles.detailValue}>
-              Day {pot.registered_day_of_year}
-            </Text>
-          </View>
-
-          {pot.sensor_id && (
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Sensor ID</Text>
-              <Text style={styles.detailValue}>{pot.sensor_id}</Text>
-            </View>
-          )}
+    <Screen style={styles.container}>
+      <ScrollView>
+        {/* Header with Back Button */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Location & Weather Section */}
-        {pot.latitude && pot.longitude && (
-          <>
-            <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>📍 Location & Climate</Text>
-            <View style={styles.detailsGrid}>
-              {pot.address && (
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Address</Text>
-                  <Text style={styles.detailValue}>{pot.address}</Text>
-                </View>
-              )}
-
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>GPS Coordinates</Text>
-                <Text style={styles.detailValue}>
-                  {pot.latitude.toFixed(6)}, {pot.longitude.toFixed(6)}
-                </Text>
-              </View>
-
-              {pot.temperature && (
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>
-                    Temperature at Registration
-                  </Text>
-                  <Text style={styles.detailValue}>🌡️ {pot.temperature}°C</Text>
-                </View>
-              )}
-
-              {pot.humidity && (
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>
-                    Humidity at Registration
-                  </Text>
-                  <Text style={styles.detailValue}>💧 {pot.humidity}%</Text>
-                </View>
-              )}
-
-              {pot.weather_condition && (
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Weather Conditions</Text>
-                  <Text style={styles.detailValue}>
-                    ☁️ {pot.weather_description || pot.weather_condition}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </>
+        {/* Photo */}
+        {pot.photo_url ? (
+          <Image source={{ uri: pot.photo_url }} style={styles.photo} />
+        ) : (
+          <View style={styles.photoPlaceholder}>
+            <Text style={styles.photoPlaceholderText}>🌱</Text>
+          </View>
         )}
 
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.editButton} onPress={onEdit}>
-            <Text style={styles.editButtonText}>✏️ Edit Pot</Text>
-          </TouchableOpacity>
+        {/* Pot Information */}
+        <View style={styles.content}>
+          <Text style={styles.name}>{pot.name}</Text>
+          <Text style={styles.species}>{pot.species}</Text>
 
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>🗑️ Delete Pot</Text>
-          </TouchableOpacity>
+          <View style={styles.divider} />
+
+          {/* Details Grid */}
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>State</Text>
+              <Text style={styles.detailValue}>
+                {getStateLabel(pot.initial_state)}
+              </Text>
+            </View>
+
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Moisture Threshold</Text>
+              <Text style={styles.detailValue}>
+                💧 {pot.moisture_threshold}%
+              </Text>
+            </View>
+
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Registered</Text>
+              <Text style={styles.detailValue}>
+                {formatDate(pot.registered_at)}
+              </Text>
+            </View>
+
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Day of Year</Text>
+              <Text style={styles.detailValue}>
+                Day {pot.registered_day_of_year}
+              </Text>
+            </View>
+
+            {pot.sensor_id && (
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Sensor ID</Text>
+                <Text style={styles.detailValue}>{pot.sensor_id}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Location & Weather Section */}
+          {pot.latitude && pot.longitude && (
+            <>
+              <View style={styles.divider} />
+              <Text style={styles.sectionTitle}>📍 Location & Climate</Text>
+              <View style={styles.detailsGrid}>
+                {pot.address && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Address</Text>
+                    <Text style={styles.detailValue}>{pot.address}</Text>
+                  </View>
+                )}
+
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>GPS Coordinates</Text>
+                  <Text style={styles.detailValue}>
+                    {pot.latitude.toFixed(6)}, {pot.longitude.toFixed(6)}
+                  </Text>
+                </View>
+
+                {pot.temperature && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>
+                      Temperature at Registration
+                    </Text>
+                    <Text style={styles.detailValue}>
+                      🌡️ {pot.temperature}°C
+                    </Text>
+                  </View>
+                )}
+
+                {pot.humidity && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>
+                      Humidity at Registration
+                    </Text>
+                    <Text style={styles.detailValue}>💧 {pot.humidity}%</Text>
+                  </View>
+                )}
+
+                {pot.weather_condition && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Weather Conditions</Text>
+                    <Text style={styles.detailValue}>
+                      ☁️ {pot.weather_description || pot.weather_condition}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.editButton} onPress={onEdit}>
+              <Text style={styles.editButtonText}>✏️ Edit Pot</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDelete}
+            >
+              <Text style={styles.deleteButtonText}>🗑️ Delete Pot</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 };
 

@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { updatePot, uploadPotPhoto } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 import { supabase } from '@eb-packages/core';
+import { Screen } from '@eb-packages/ui';
 
 interface PotEditScreenProps {
   pot: Pot;
@@ -147,136 +148,138 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
   ];
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Edit Pot</Text>
-        </View>
+    <Screen style={styles.container}>
+      <ScrollView>
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+              <Text style={styles.backButtonText}>← Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>Edit Pot</Text>
+          </View>
 
-        {/* Photo Section */}
-        <View style={styles.photoSection}>
-          {photoUri ? (
-            <View style={styles.photoContainer}>
-              <Image source={{ uri: photoUri }} style={styles.photo} />
-              <TouchableOpacity
-                style={styles.changePhotoButton}
-                onPress={() => {
-                  setPhotoUri(null);
-                  setHasNewPhoto(true);
-                }}
-              >
-                <Text style={styles.changePhotoText}>Change Photo</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderText}>📷</Text>
-              <Text style={styles.photoPlaceholderLabel}>Add a photo</Text>
-              <View style={styles.photoButtons}>
+          {/* Photo Section */}
+          <View style={styles.photoSection}>
+            {photoUri ? (
+              <View style={styles.photoContainer}>
+                <Image source={{ uri: photoUri }} style={styles.photo} />
                 <TouchableOpacity
-                  style={styles.photoButton}
-                  onPress={takePhoto}
+                  style={styles.changePhotoButton}
+                  onPress={() => {
+                    setPhotoUri(null);
+                    setHasNewPhoto(true);
+                  }}
                 >
-                  <Text style={styles.photoButtonText}>Take Photo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.photoButton}
-                  onPress={pickImage}
-                >
-                  <Text style={styles.photoButtonText}>
-                    Choose from Gallery
-                  </Text>
+                  <Text style={styles.changePhotoText}>Change Photo</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          )}
-        </View>
-
-        {/* Form Fields */}
-        <View style={styles.formSection}>
-          <Text style={styles.label}>Pot Name *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder='e.g., Balcony Tomato'
-            value={name}
-            onChangeText={setName}
-            editable={!loading}
-          />
-
-          <Text style={styles.label}>Plant Species *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder='e.g., Tomato, Basil, Cactus'
-            value={species}
-            onChangeText={setSpecies}
-            editable={!loading}
-          />
-
-          <Text style={styles.label}>Initial State</Text>
-          <View style={styles.stateButtons}>
-            {stateOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.stateButton,
-                  initialState === option.value && styles.stateButtonActive,
-                ]}
-                onPress={() => setInitialState(option.value)}
-                disabled={loading}
-              >
-                <Text
-                  style={[
-                    styles.stateButtonText,
-                    initialState === option.value &&
-                      styles.stateButtonTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Text style={styles.photoPlaceholderText}>📷</Text>
+                <Text style={styles.photoPlaceholderLabel}>Add a photo</Text>
+                <View style={styles.photoButtons}>
+                  <TouchableOpacity
+                    style={styles.photoButton}
+                    onPress={takePhoto}
+                  >
+                    <Text style={styles.photoButtonText}>Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.photoButton}
+                    onPress={pickImage}
+                  >
+                    <Text style={styles.photoButtonText}>
+                      Choose from Gallery
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
 
-          <Text style={styles.label}>
-            Moisture Threshold: {moistureThreshold}%
-          </Text>
-          <View style={styles.sliderContainer}>
-            <Text style={styles.sliderLabel}>Dry</Text>
-            <View style={styles.sliderTrack}>
-              {[30, 40, 50, 60, 70].map((value) => (
+          {/* Form Fields */}
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Pot Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='e.g., Balcony Tomato'
+              value={name}
+              onChangeText={setName}
+              editable={!loading}
+            />
+
+            <Text style={styles.label}>Plant Species *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='e.g., Tomato, Basil, Cactus'
+              value={species}
+              onChangeText={setSpecies}
+              editable={!loading}
+            />
+
+            <Text style={styles.label}>Initial State</Text>
+            <View style={styles.stateButtons}>
+              {stateOptions.map((option) => (
                 <TouchableOpacity
-                  key={value}
+                  key={option.value}
                   style={[
-                    styles.sliderDot,
-                    moistureThreshold === value && styles.sliderDotActive,
+                    styles.stateButton,
+                    initialState === option.value && styles.stateButtonActive,
                   ]}
-                  onPress={() => setMoistureThreshold(value)}
+                  onPress={() => setInitialState(option.value)}
                   disabled={loading}
-                />
+                >
+                  <Text
+                    style={[
+                      styles.stateButtonText,
+                      initialState === option.value &&
+                        styles.stateButtonTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.sliderLabel}>Wet</Text>
-          </View>
-        </View>
 
-        {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color='#fff' />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+            <Text style={styles.label}>
+              Moisture Threshold: {moistureThreshold}%
+            </Text>
+            <View style={styles.sliderContainer}>
+              <Text style={styles.sliderLabel}>Dry</Text>
+              <View style={styles.sliderTrack}>
+                {[30, 40, 50, 60, 70].map((value) => (
+                  <TouchableOpacity
+                    key={value}
+                    style={[
+                      styles.sliderDot,
+                      moistureThreshold === value && styles.sliderDotActive,
+                    ]}
+                    onPress={() => setMoistureThreshold(value)}
+                    disabled={loading}
+                  />
+                ))}
+              </View>
+              <Text style={styles.sliderLabel}>Wet</Text>
+            </View>
+          </View>
+
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color='#fff' />
+            ) : (
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Screen>
   );
 };
 

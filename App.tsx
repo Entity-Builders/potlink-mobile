@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { supabase } from '@eb-packages/core';
 import { useEffect, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PotsListScreen } from './src/screens/PotsListScreen';
 import { PotRegistrationScreen } from './src/screens/PotRegistrationScreen';
@@ -97,10 +98,12 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
-      {renderScreen()}
-      <StatusBar style='auto' />
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.container}>
+        {renderScreen()}
+        <StatusBar style='auto' />
+      </View>
+    </SafeAreaProvider>
   );
 }
 

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { getUserPots } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
+import { Screen } from '@eb-packages/ui';
 
 interface PotsListScreenProps {
   onAddPot: () => void;
@@ -86,7 +87,7 @@ export const PotsListScreen = ({
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>My Garden 🌱</Text>
         <TouchableOpacity style={styles.addButton} onPress={onAddPot}>
@@ -103,7 +104,7 @@ export const PotsListScreen = ({
         refreshing={loading}
         onRefresh={loadPots}
       />
-    </View>
+    </Screen>
   );
 };
 
