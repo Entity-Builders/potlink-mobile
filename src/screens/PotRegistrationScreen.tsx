@@ -11,7 +11,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { createPot, extractPotMetadata } from '@eb-packages/logic';
+import * as FileSystem from 'expo-file-system/legacy';
+import {
+  createPot,
+  extractPotMetadata,
+  identifyPlant,
+} from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { VoiceInput, Screen } from '@eb-packages/ui';
 
@@ -29,7 +34,9 @@ export const PotRegistrationScreen = ({
     'seeds' | 'seedling' | 'young' | 'mature'
   >('seeds');
   const [moistureThreshold, setMoistureThreshold] = useState(50);
+  const [variety, setVariety] = useState('');
   const [loading, setLoading] = useState(false);
+  const [identifying, setIdentifying] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
 
   const requestPermissions = async () => {
@@ -73,6 +80,52 @@ export const PotRegistrationScreen = ({
     }
   };
 
+  const handleIdentifyPlant = async () => {
+    if (!photoUri) {
+      Alert.alert('No Photo', 'Please take or select a photo first');
+      return;
+    }
+
+    setIdentifying(true);
+    try {
+      // Read the image as base64
+      const base64 = await FileSystem.readAsStringAsync(photoUri, {
+        encoding: 'base64',
+      });
+
+      console.log('Identifying plant from image...');
+      const result = await identifyPlant(base64);
+
+      if (result.species && result.species !== 'Desconocido') {
+        // Auto-fill species and variety
+        setSpecies(result.species);
+        if (result.variety) {
+          setVariety(result.variety);
+        }
+
+        Alert.alert(
+          'Planta Identificada! 🌱',
+          `${result.species}${result.variety ? ` - ${result.variety}` : ''}\n\n${result.description || ''}`,
+          [{ text: 'OK', style: 'default' }],
+        );
+      } else {
+        Alert.alert(
+          'No Identificada',
+          result.description ||
+            'No se pudo identificar la planta. Por favor ingresa los datos manualmente.',
+        );
+      }
+    } catch (error) {
+      console.error('Error identifying plant:', error);
+      Alert.alert(
+        'Error',
+        'Hubo un problema al analizar la imagen. Por favor intenta de nuevo.',
+      );
+    } finally {
+      setIdentifying(false);
+    }
+  };
+
   const validateForm = (): boolean => {
     if (!name.trim()) {
       Alert.alert('Validation Error', 'Please enter a name for your pot');
@@ -95,6 +148,7 @@ export const PotRegistrationScreen = ({
         name: name.trim(),
         species: species.trim(),
         seed_type: seedType.trim() || undefined,
+        variety: variety.trim() || undefined,
         notes: notes.trim() || undefined,
         initial_state: initialState,
         moisture_threshold: moistureThreshold,
@@ -149,12 +203,27 @@ export const PotRegistrationScreen = ({
             {photoUri ? (
               <View style={styles.photoContainer}>
                 <Image source={{ uri: photoUri }} style={styles.photo} />
-                <TouchableOpacity
-                  style={styles.changePhotoButton}
-                  onPress={() => setPhotoUri(null)}
-                >
-                  <Text style={styles.changePhotoText}>Change Photo</Text>
-                </TouchableOpacity>
+                <View style={styles.photoActions}>
+                  <TouchableOpacity
+                    style={styles.identifyButton}
+                    onPress={handleIdentifyPlant}
+                    disabled={identifying}
+                  >
+                    {identifying ? (
+                      <ActivityIndicator size='small' color='#fff' />
+                    ) : (
+                      <Text style={styles.identifyButtonText}>
+                        🌿 Identificar Planta
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.changePhotoButton}
+                    onPress={() => setPhotoUri(null)}
+                  >
+                    <Text style={styles.changePhotoText}>Change Photo</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <View style={styles.photoPlaceholder}>
@@ -212,12 +281,21 @@ export const PotRegistrationScreen = ({
               />
             </View>
 
-            <Text style={styles.label}>Seed Type (Optional)</Text>
+            <Text style={styles.label}>Seed Type</Text>
             <TextInput
               style={styles.input}
               placeholder='e.g., Heirloom, Hybrid'
               value={seedType}
               onChangeText={setSeedType}
+              editable={!loading}
+            />
+
+            <Text style={styles.label}>Variety</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='e.g., Cherry, San Marzano'
+              value={variety}
+              onChangeText={setVariety}
               editable={!loading}
             />
 
@@ -474,6 +552,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingStatusText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  identifyButton: {
+    flex: 1,
+    backgroundColor: '#2e7d32',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  identifyButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
