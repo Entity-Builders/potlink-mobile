@@ -89,7 +89,7 @@ export const PotsListScreen = ({
   return (
     <Screen style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Garden 🌱</Text>
+        <Text style={styles.title}>Pot Link 🌱</Text>
         <TouchableOpacity style={styles.addButton} onPress={onAddPot}>
           <Text style={styles.addButtonText}>+ Add Pot</Text>
         </TouchableOpacity>
