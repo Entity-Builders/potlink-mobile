@@ -102,7 +102,24 @@ export const PotDetailScreen = ({
 
         {/* Photo */}
         {pot.photo_url ? (
-          <Image source={{ uri: pot.photo_url }} style={styles.photo} />
+          <>
+            {console.log('Pot photo URL:', pot.photo_url)}
+            <Image
+              source={{ uri: pot.photo_url }}
+              style={styles.photo}
+              onLoad={() =>
+                console.log('Image loaded successfully:', pot.photo_url)
+              }
+              onError={(error) =>
+                console.error(
+                  'Image failed to load:',
+                  error.nativeEvent.error,
+                  'URL:',
+                  pot.photo_url,
+                )
+              }
+            />
+          </>
         ) : (
           <View style={styles.photoPlaceholder}>
             <Text style={styles.photoPlaceholderText}>🌱</Text>
