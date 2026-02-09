@@ -96,166 +96,108 @@ export const PotDetailScreen = ({
 
   return (
     <Screen style={styles.container}>
-      <ScrollView>
-        {/* Header with Back Button */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.editButtonHeader} onPress={onEdit}>
+          <Text style={styles.editButtonTextHeader}>Edit</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.imageContainer}>
+            {pot.photo_url ? (
+              <Image source={{ uri: pot.photo_url }} style={styles.heroImage} />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderIcon}>🌱</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.heroName}>{pot.name}</Text>
+          <Text style={styles.heroSpecies}>{pot.species}</Text>
         </View>
 
-        {/* Photo */}
-        {pot.photo_url ? (
-          <>
-            {console.log('Pot photo URL:', pot.photo_url)}
-            <Image
-              source={{ uri: pot.photo_url }}
-              style={styles.photo}
-              onLoad={() =>
-                console.log('Image loaded successfully:', pot.photo_url)
-              }
-              onError={(error) =>
-                console.error(
-                  'Image failed to load:',
-                  error.nativeEvent.error,
-                  'URL:',
-                  pot.photo_url,
-                )
-              }
-            />
-          </>
-        ) : (
-          <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoPlaceholderText}>🌱</Text>
+        {/* Status Cards */}
+        <View style={styles.statusContainer}>
+          <View style={styles.statusCard}>
+            <Text style={styles.statusLabel}>MOISTURE</Text>
+            <Text style={styles.statusValue}>{pot.moisture_threshold}%</Text>
           </View>
-        )}
+          <View style={styles.statusCard}>
+            <Text style={styles.statusLabel}>STATE</Text>
+            <Text style={styles.statusValue}>
+              {getStateLabel(pot.initial_state)}
+            </Text>
+          </View>
+        </View>
 
-        {/* Pot Information */}
-        <View style={styles.content}>
-          <Text style={styles.name}>{pot.name}</Text>
-          <Text style={styles.species}>{pot.species}</Text>
+        {/* Care Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Care</Text>
+            <TouchableOpacity onPress={onCareSettings}>
+              <Text style={styles.linkButton}>Manage Schedule</Text>
+            </TouchableOpacity>
+          </View>
+          <CareScheduleList potId={pot.id} />
+        </View>
 
-          <View style={styles.divider} />
-
-          {/* Details Grid */}
-          <View style={styles.detailsGrid}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>State</Text>
-              <Text style={styles.detailValue}>
-                {getStateLabel(pot.initial_state)}
-              </Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Moisture Threshold</Text>
-              <Text style={styles.detailValue}>
-                💧 {pot.moisture_threshold}%
-              </Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Registered</Text>
-              <Text style={styles.detailValue}>
+        {/* About Section (Collapsible details) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.aboutCard}>
+            <View style={styles.aboutRow}>
+              <Text style={styles.aboutLabel}>Registered</Text>
+              <Text style={styles.aboutValue}>
                 {formatDate(pot.registered_at)}
               </Text>
             </View>
 
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Day of Year</Text>
-              <Text style={styles.detailValue}>
-                Day {pot.registered_day_of_year}
-              </Text>
-            </View>
-
             {pot.sensor_id && (
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Sensor ID</Text>
-                <Text style={styles.detailValue}>{pot.sensor_id}</Text>
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Sensor Device</Text>
+                <Text style={styles.aboutValue}>{pot.sensor_id}</Text>
+              </View>
+            )}
+
+            {pot.latitude && pot.longitude && (
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Location</Text>
+                <Text style={styles.aboutValue}>
+                  {pot.address ||
+                    `${pot.latitude.toFixed(4)}, ${pot.longitude.toFixed(4)}`}
+                </Text>
+              </View>
+            )}
+
+            {pot.weather_condition && (
+              <View style={styles.aboutRow}>
+                <Text style={styles.aboutLabel}>Weather</Text>
+                <Text style={styles.aboutValue}>
+                  {pot.weather_description || pot.weather_condition}
+                  {pot.temperature ? ` (${pot.temperature}°C)` : ''}
+                </Text>
               </View>
             )}
           </View>
-
-          {/* Location & Weather Section */}
-          {pot.latitude && pot.longitude && (
-            <>
-              <View style={styles.divider} />
-              <Text style={styles.sectionTitle}>📍 Location & Climate</Text>
-              <View style={styles.detailsGrid}>
-                {pot.address && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Address</Text>
-                    <Text style={styles.detailValue}>{pot.address}</Text>
-                  </View>
-                )}
-
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>GPS Coordinates</Text>
-                  <Text style={styles.detailValue}>
-                    {pot.latitude.toFixed(6)}, {pot.longitude.toFixed(6)}
-                  </Text>
-                </View>
-
-                {pot.temperature && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>
-                      Temperature at Registration
-                    </Text>
-                    <Text style={styles.detailValue}>
-                      🌡️ {pot.temperature}°C
-                    </Text>
-                  </View>
-                )}
-
-                {pot.humidity && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>
-                      Humidity at Registration
-                    </Text>
-                    <Text style={styles.detailValue}>💧 {pot.humidity}%</Text>
-                  </View>
-                )}
-
-                {pot.weather_condition && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Weather Conditions</Text>
-                    <Text style={styles.detailValue}>
-                      ☁️ {pot.weather_description || pot.weather_condition}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
-
-          <View style={styles.divider} />
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Care Schedule</Text>
-            <TouchableOpacity onPress={onCareSettings}>
-              <Text style={styles.linkButton}>⚙️ Settings</Text>
-            </TouchableOpacity>
-          </View>
-
-          <CareScheduleList potId={pot.id} />
-
-          <View style={styles.divider} />
-
-          <CareHistoryList potId={pot.id} />
-
-          {/* Action Buttons */}
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.editButton} onPress={onEdit}>
-              <Text style={styles.editButtonText}>✏️ Edit Pot</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={handleDelete}
-            >
-              <Text style={styles.deleteButtonText}>🗑️ Delete Pot</Text>
-            </TouchableOpacity>
-          </View>
         </View>
+
+        {/* History Section (Lower priority) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>History</Text>
+          <CareHistoryList potId={pot.id} />
+        </View>
+
+        {/* Danger Zone */}
+        <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
+          <Text style={styles.deleteLinkText}>Delete Pot</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </Screen>
   );
@@ -264,121 +206,167 @@ export const PotDetailScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
-    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    zIndex: 10,
   },
   backButton: {
     padding: 8,
+    marginLeft: -8,
   },
   backButtonText: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '500',
+  },
+  editButtonHeader: {
+    padding: 8,
+    marginRight: -8,
+  },
+  editButtonTextHeader: {
     fontSize: 16,
     color: '#2e7d32',
     fontWeight: '600',
   },
-  photo: {
-    width: '100%',
-    height: 300,
-    backgroundColor: '#e0e0e0',
+  scrollContent: {
+    paddingBottom: 40,
   },
-  photoPlaceholder: {
-    width: '100%',
-    height: 300,
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+  },
+  imageContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 16,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+  },
+  heroImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 24,
+    backgroundColor: '#f0f0f0',
+  },
+  placeholderImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 24,
     backgroundColor: '#e8f5e9',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  photoPlaceholderText: {
-    fontSize: 80,
+  placeholderIcon: {
+    fontSize: 64,
   },
-  content: {
-    padding: 20,
-  },
-  name: {
+  heroName: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  species: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  detailsGrid: {
-    gap: 16,
-  },
-  detailItem: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#999',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  detailValue: {
+  heroSpecies: {
     fontSize: 16,
-    color: '#333',
-    fontWeight: '600',
+    color: '#666',
+    fontWeight: '500',
   },
-  actions: {
-    marginTop: 32,
+  statusContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
     gap: 12,
+    marginBottom: 32,
   },
-  editButton: {
-    backgroundColor: '#2e7d32',
+  statusCard: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
-  editButtonText: {
-    color: '#fff',
+  statusLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#888',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  statusValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#2e7d32',
+    textAlign: 'center',
   },
-  deleteButton: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#d32f2f',
-  },
-  deleteButtonText: {
-    color: '#d32f2f',
-    fontSize: 16,
-    fontWeight: 'bold',
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 12,
   },
   linkButton: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#2e7d32',
-    fontSize: 16,
+  },
+  aboutCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  aboutLabel: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+  },
+  aboutValue: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '500',
+    flex: 2,
+    textAlign: 'right',
+  },
+  deleteLink: {
+    alignItems: 'center',
+    padding: 16,
+    marginTop: 8,
+  },
+  deleteLinkText: {
+    color: '#d32f2f',
+    fontSize: 15,
     fontWeight: '600',
   },
 });
