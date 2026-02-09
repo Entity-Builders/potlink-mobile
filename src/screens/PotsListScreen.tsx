@@ -15,11 +15,13 @@ import { Screen } from '@eb-packages/ui';
 interface PotsListScreenProps {
   onAddPot: () => void;
   onPotPress: (pot: Pot) => void;
+  onOpenCalendar: () => void;
 }
 
 export const PotsListScreen = ({
   onAddPot,
   onPotPress,
+  onOpenCalendar,
 }: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,10 +91,15 @@ export const PotsListScreen = ({
   return (
     <Screen style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Pot Link 🌱</Text>
-        <TouchableOpacity style={styles.addButton} onPress={onAddPot}>
-          <Text style={styles.addButtonText}>+ Add Pot</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>My Garden</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.iconButton} onPress={onOpenCalendar}>
+            <Text style={styles.iconButtonText}>📅</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={onAddPot}>
+            <Text style={styles.addButtonText}>+ Add Pot</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -133,10 +140,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  title: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2e7d32',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconButton: {
+    padding: 8,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 8,
+  },
+  iconButtonText: {
+    fontSize: 20,
   },
   addButton: {
     backgroundColor: '#2e7d32',

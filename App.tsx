@@ -12,8 +12,15 @@ import type { Pot } from '@eb-packages/garden';
 import { NotificationService } from './src/services/NotificationService';
 
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
+import { CareCalendarScreen } from './src/screens/CareCalendarScreen';
 
-type Screen = 'list' | 'register' | 'detail' | 'edit' | 'care-settings';
+type Screen =
+  | 'list'
+  | 'register'
+  | 'detail'
+  | 'edit'
+  | 'care-settings'
+  | 'calendar';
 
 interface NavigationState {
   screen: Screen;
@@ -67,6 +74,7 @@ export default function App() {
           <PotsListScreen
             onAddPot={() => setNavigation({ screen: 'register' })}
             onPotPress={(pot) => setNavigation({ screen: 'detail', pot })}
+            onOpenCalendar={() => setNavigation({ screen: 'calendar' })}
           />
         );
 
@@ -114,6 +122,9 @@ export default function App() {
             }
           />
         ) : null;
+
+      case 'calendar':
+        return <CareCalendarScreen />;
 
       default:
         return null;

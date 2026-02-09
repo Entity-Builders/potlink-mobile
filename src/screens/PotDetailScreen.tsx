@@ -13,6 +13,7 @@ import type { Pot } from '@eb-packages/garden';
 import { deletePot } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
 import { CareScheduleList } from '../components/Care/CareScheduleList';
+import { CareHistoryList } from '../components/Care/CareHistoryList';
 
 interface PotDetailScreenProps {
   pot: Pot;
@@ -236,6 +237,10 @@ export const PotDetailScreen = ({
           </View>
 
           <CareScheduleList potId={pot.id} />
+
+          <View style={styles.divider} />
+
+          <CareHistoryList potId={pot.id} />
 
           {/* Action Buttons */}
           <View style={styles.actions}>
