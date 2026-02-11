@@ -35,7 +35,17 @@ export default function App() {
 
   useEffect(() => {
     // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.log('Error getting session:', error);
+        // If the refresh token is invalid, clear the session
+        if (error.message && error.message.includes('Invalid Refresh Token')) {
+          supabase.auth.signOut();
+          setSession(null);
+          return;
+        }
+      }
       setSession(session);
     });
 
