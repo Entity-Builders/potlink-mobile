@@ -58,6 +58,12 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow PotLink to use your location to record where your pots are located and fetch local weather data."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PotLink to access your camera to scan your plants."
+        }
       ]
     ],
     "extra": {
