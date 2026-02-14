@@ -71,7 +71,9 @@ export default function App() {
   if (!session) {
     return (
       <View style={styles.container}>
-        <AuthScreen />
+        <AuthScreen
+          onNavigateToList={() => setNavigation({ screen: 'list' })}
+        />
         <StatusBar style='auto' />
       </View>
     );
