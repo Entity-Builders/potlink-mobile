@@ -82,6 +82,7 @@ export default function App() {
       case 'list':
         return (
           <PotsListScreen
+            session={session}
             onAddPot={() => setNavigation({ screen: 'register' })}
             onPotPress={(pot) => setNavigation({ screen: 'detail', pot })}
             onOpenCalendar={() => setNavigation({ screen: 'calendar' })}

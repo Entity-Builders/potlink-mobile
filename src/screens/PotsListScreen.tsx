@@ -10,15 +10,19 @@ import {
 } from 'react-native';
 import { getUserPots } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
-import { Screen } from '@eb-packages/ui';
+import { Screen, SharedHeader } from '@eb-packages/ui';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '@eb-packages/core';
 
 interface PotsListScreenProps {
+  session: Session | null;
   onAddPot: () => void;
   onPotPress: (pot: Pot) => void;
   onOpenCalendar: () => void;
 }
 
 export const PotsListScreen = ({
+  session,
   onAddPot,
   onPotPress,
   onOpenCalendar,
@@ -90,17 +94,36 @@ export const PotsListScreen = ({
 
   return (
     <Screen style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Garden</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.iconButton} onPress={onOpenCalendar}>
+      <SharedHeader
+        session={session}
+        onLogin={() => {
+          // This shouldn't be called since we only show this screen when authenticated
+          // but we need to provide a callback
+          supabase.auth.signOut();
+        }}
+        onLogout={() => supabase.auth.signOut()}
+        title='PotLink'
+        logo={<Text style={styles.logoEmoji}>🪴</Text>}
+        themeColor='#2e7d32'
+        variant='light'
+        showUserInfo={true}
+        actions={[
+          <TouchableOpacity
+            key='calendar'
+            style={styles.iconButton}
+            onPress={onOpenCalendar}
+          >
             <Text style={styles.iconButtonText}>📅</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={onAddPot}>
+          </TouchableOpacity>,
+          <TouchableOpacity
+            key='add'
+            style={styles.addButton}
+            onPress={onAddPot}
+          >
             <Text style={styles.addButtonText}>+ Add Pot</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          </TouchableOpacity>,
+        ]}
+      />
 
       <FlatList
         data={pots}
@@ -131,24 +154,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitle: {
+  logoEmoji: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2e7d32',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
   },
   iconButton: {
     padding: 8,
