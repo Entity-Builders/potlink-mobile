@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PotsListScreen } from './src/screens/PotsListScreen';
-import { PotRegistrationScreen } from './src/screens/PotRegistrationScreen';
+import { ARPotRegistrationScreen } from './src/screens/ARPotRegistrationScreen';
 import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
 import type { Pot } from '@eb-packages/garden';
@@ -90,8 +90,9 @@ export default function App() {
 
       case 'register':
         return (
-          <PotRegistrationScreen
+          <ARPotRegistrationScreen
             onSuccess={() => setNavigation({ screen: 'list' })}
+            onCancel={() => setNavigation({ screen: 'list' })}
           />
         );
 
