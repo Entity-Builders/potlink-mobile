@@ -106,7 +106,7 @@ export const PotsListScreen = ({
         logo={<Text style={styles.logoEmoji}>🪴</Text>}
         themeColor='#2e7d32'
         variant='light'
-        showUserInfo={true}
+        showUserInfo={false}
         actions={[
           <TouchableOpacity
             key='calendar'
