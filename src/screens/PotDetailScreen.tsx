@@ -14,6 +14,7 @@ import { deletePot, getSpeciesCareGuide } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
 import { CareScheduleList } from '../components/Care/CareScheduleList';
 import { CareHistoryList } from '../components/Care/CareHistoryList';
+import { CareGuideCard } from '../components/Care/CareGuideCard';
 
 interface PotDetailScreenProps {
   pot: Pot;
@@ -210,6 +211,7 @@ export const PotDetailScreen = ({
         {__DEV__ && (
           <View style={styles.debugSection}>
             <Text style={styles.debugTitle}>Debug Metadata</Text>
+
             <Text style={styles.debugContent}>
               {JSON.stringify(pot, null, 2)}
             </Text>
@@ -217,11 +219,13 @@ export const PotDetailScreen = ({
             <Text style={[styles.debugTitle, { marginTop: 16 }]}>
               Species Care Guide
             </Text>
-            <Text style={styles.debugContent}>
-              {careGuide
-                ? JSON.stringify(careGuide, null, 2)
-                : 'Loading or not found...'}
-            </Text>
+            {careGuide ? (
+              <CareGuideCard guide={careGuide} />
+            ) : (
+              <Text style={styles.debugContent}>
+                Loading or not found... (Run seed.sql if needed)
+              </Text>
+            )}
           </View>
         )}
 
