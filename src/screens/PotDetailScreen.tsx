@@ -9,8 +9,8 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import type { Pot } from '@eb-packages/garden';
-import { deletePot } from '@eb-packages/logic';
+import type { Pot, SpeciesCareGuide } from '@eb-packages/garden';
+import { deletePot, getSpeciesCareGuide } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
 import { CareScheduleList } from '../components/Care/CareScheduleList';
 import { CareHistoryList } from '../components/Care/CareHistoryList';
@@ -30,6 +30,16 @@ export const PotDetailScreen = ({
   onDeleted,
   onCareSettings,
 }: PotDetailScreenProps) => {
+  const [careGuide, setCareGuide] = React.useState<SpeciesCareGuide | null>(
+    null,
+  );
+
+  React.useEffect(() => {
+    if (__DEV__ && pot.species) {
+      getSpeciesCareGuide(pot.species).then(setCareGuide);
+    }
+  }, [pot.species]);
+
   const handleDelete = async () => {
     console.log('Delete button clicked for pot:', pot.id, pot.name);
 
@@ -196,6 +206,24 @@ export const PotDetailScreen = ({
         <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
           <Text style={styles.deleteLinkText}>Delete Pot</Text>
         </TouchableOpacity>
+
+        {__DEV__ && (
+          <View style={styles.debugSection}>
+            <Text style={styles.debugTitle}>Debug Metadata</Text>
+            <Text style={styles.debugContent}>
+              {JSON.stringify(pot, null, 2)}
+            </Text>
+
+            <Text style={[styles.debugTitle, { marginTop: 16 }]}>
+              Species Care Guide
+            </Text>
+            <Text style={styles.debugContent}>
+              {careGuide
+                ? JSON.stringify(careGuide, null, 2)
+                : 'Loading or not found...'}
+            </Text>
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -368,5 +396,24 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontSize: 15,
     fontWeight: '600',
+  },
+  debugSection: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  debugContent: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 12,
+    color: '#333',
   },
 });
