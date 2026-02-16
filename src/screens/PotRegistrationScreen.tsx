@@ -16,6 +16,7 @@ import {
   createPot,
   extractPotMetadata,
   identifyPlant,
+  createDefaultCareSchedules,
 } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { VoiceInput, Screen } from '@eb-packages/ui';
@@ -35,9 +36,16 @@ export const PotRegistrationScreen = ({
   >('seeds');
   const [moistureThreshold, setMoistureThreshold] = useState(50);
   const [variety, setVariety] = useState('');
+  const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>(
+    'outdoor',
+  );
   const [loading, setLoading] = useState(false);
   const [identifying, setIdentifying] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
+  const [careInfo, setCareInfo] = useState<{
+    watering_frequency?: string;
+    fertilizer_frequency?: string;
+  } | null>(null);
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -108,6 +116,11 @@ export const PotRegistrationScreen = ({
           `${result.species}${result.variety ? ` - ${result.variety}` : ''}\n\n${result.description || ''}`,
           [{ text: 'OK', style: 'default' }],
         );
+
+        // Store care info for later use when creating the pot
+        if (result.care_info) {
+          setCareInfo(result.care_info);
+        }
       } else {
         Alert.alert(
           'No Identificada',
@@ -151,6 +164,7 @@ export const PotRegistrationScreen = ({
         variety: variety.trim() || undefined,
         notes: notes.trim() || undefined,
         initial_state: initialState,
+        location_type: locationType,
         moisture_threshold: moistureThreshold,
         photo_uri: photoUri || undefined,
       };
@@ -159,6 +173,10 @@ export const PotRegistrationScreen = ({
       const result = await createPot(potData);
 
       if (result) {
+        // Auto-create care schedules
+        setLoadingStatus('Setting up care schedules...');
+        await createDefaultCareSchedules(result.id, careInfo || undefined);
+
         Alert.alert('Success', 'Pot registered successfully! 🌱', [
           { text: 'OK', onPress: () => onSuccess?.() },
         ]);
@@ -332,6 +350,44 @@ export const PotRegistrationScreen = ({
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            <Text style={styles.label}>Ubicación</Text>
+            <View style={styles.stateButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.stateButton,
+                  locationType === 'indoor' && styles.stateButtonActive,
+                ]}
+                onPress={() => setLocationType('indoor')}
+                disabled={loading}
+              >
+                <Text
+                  style={[
+                    styles.stateButtonText,
+                    locationType === 'indoor' && styles.stateButtonTextActive,
+                  ]}
+                >
+                  🏠 Interior
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.stateButton,
+                  locationType === 'outdoor' && styles.stateButtonActive,
+                ]}
+                onPress={() => setLocationType('outdoor')}
+                disabled={loading}
+              >
+                <Text
+                  style={[
+                    styles.stateButtonText,
+                    locationType === 'outdoor' && styles.stateButtonTextActive,
+                  ]}
+                >
+                  🌳 Exterior
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.label}>

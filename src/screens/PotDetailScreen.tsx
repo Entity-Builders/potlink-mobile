@@ -9,12 +9,17 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import type { Pot, SpeciesCareGuide } from '@eb-packages/garden';
-import { deletePot, getSpeciesCareGuide } from '@eb-packages/logic';
+import type { Pot, SpeciesCareGuide, CareSchedule } from '@eb-packages/garden';
+import {
+  deletePot,
+  getSpeciesCareGuide,
+  getCareSchedules,
+} from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
-import { CareScheduleList } from '../components/Care/CareScheduleList';
 import { CareHistoryList } from '../components/Care/CareHistoryList';
-import { CareGuideCard } from '../components/Care/CareGuideCard';
+import { PlantQuickInfo } from '../components/Care/PlantQuickInfo';
+import { WeatherAlert } from '../components/Care/WeatherAlert';
+import { PlantAdvisor } from '../components/Care/PlantAdvisor';
 
 interface PotDetailScreenProps {
   pot: Pot;
@@ -34,52 +39,50 @@ export const PotDetailScreen = ({
   const [careGuide, setCareGuide] = React.useState<SpeciesCareGuide | null>(
     null,
   );
+  const [schedules, setSchedules] = React.useState<CareSchedule[]>([]);
 
   React.useEffect(() => {
-    if (__DEV__ && pot.species) {
+    if (pot.species) {
       getSpeciesCareGuide(pot.species).then(setCareGuide);
     }
-  }, [pot.species]);
+    getCareSchedules(pot.id).then(setSchedules);
+  }, [pot.species, pot.id]);
 
   const handleDelete = async () => {
-    console.log('Delete button clicked for pot:', pot.id, pot.name);
-
     // For web, use window.confirm as fallback
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(
-        `Are you sure you want to delete "${pot.name}"? This cannot be undone.`,
+        `¿Estás seguro de que querés eliminar "${pot.name}"? No se puede deshacer.`,
       );
       if (!confirmed) return;
 
-      console.log('User confirmed delete');
       const success = await deletePot(pot.id);
       if (success) {
-        alert('Pot deleted successfully');
+        alert('Pot eliminado');
         onDeleted();
       } else {
-        alert('Failed to delete pot. Please try again.');
+        alert('Error al eliminar. Intentá de nuevo.');
       }
       return;
     }
 
     // For native platforms
     Alert.alert(
-      'Delete Pot',
-      `Are you sure you want to delete "${pot.name}"? This cannot be undone.`,
+      'Eliminar Pot',
+      `¿Estás seguro de que querés eliminar "${pot.name}"? No se puede deshacer.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
-            console.log('User confirmed delete');
             const success = await deletePot(pot.id);
             if (success) {
-              Alert.alert('Success', 'Pot deleted successfully', [
+              Alert.alert('Listo', 'Pot eliminado', [
                 { text: 'OK', onPress: onDeleted },
               ]);
             } else {
-              Alert.alert('Error', 'Failed to delete pot. Please try again.');
+              Alert.alert('Error', 'No se pudo eliminar. Intentá de nuevo.');
             }
           },
         },
@@ -87,20 +90,12 @@ export const PotDetailScreen = ({
     );
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const getStateLabel = (state: string) => {
     const labels = {
-      seeds: '🌱 Seeds',
-      seedling: '🌿 Seedling',
-      young: '🪴 Young Plant',
-      mature: '🌳 Mature Plant',
+      seeds: '🌱 Semillas',
+      seedling: '🌿 Brote',
+      young: '🪴 Planta joven',
+      mature: '🌳 Planta madura',
     };
     return labels[state as keyof typeof labels] || state;
   };
@@ -109,10 +104,11 @@ export const PotDetailScreen = ({
     <Screen style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>{pot.name}</Text>
         <TouchableOpacity style={styles.editButtonHeader} onPress={onEdit}>
-          <Text style={styles.editButtonTextHeader}>Edit</Text>
+          <Text style={styles.editButtonTextHeader}>✏️</Text>
         </TouchableOpacity>
       </View>
 
@@ -130,102 +126,159 @@ export const PotDetailScreen = ({
           </View>
           <Text style={styles.heroName}>{pot.name}</Text>
           <Text style={styles.heroSpecies}>{pot.species}</Text>
+          <View style={styles.chipRow}>
+            <View style={styles.stateChip}>
+              <Text style={styles.stateChipText}>
+                {getStateLabel(pot.initial_state)}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.stateChip,
+                pot.location_type === 'indoor'
+                  ? { backgroundColor: '#fff3e0', borderColor: '#ffe0b2' }
+                  : { backgroundColor: '#e8f5e9', borderColor: '#c8e6c9' },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.stateChipText,
+                  {
+                    color:
+                      pot.location_type === 'indoor' ? '#e65100' : '#2e7d32',
+                  },
+                ]}
+              >
+                {pot.location_type === 'indoor' ? '🏠 Interior' : '🌳 Exterior'}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* Status Cards */}
-        <View style={styles.statusContainer}>
-          <View style={styles.statusCard}>
-            <Text style={styles.statusLabel}>MOISTURE</Text>
-            <Text style={styles.statusValue}>{pot.moisture_threshold}%</Text>
-          </View>
-          <View style={styles.statusCard}>
-            <Text style={styles.statusLabel}>STATE</Text>
-            <Text style={styles.statusValue}>
-              {getStateLabel(pot.initial_state)}
-            </Text>
-          </View>
-        </View>
+        {/* Smart Plant Advisor — contextual Q&A */}
+        <PlantAdvisor
+          species={pot.species}
+          registeredAt={pot.registered_at}
+          schedules={schedules}
+          careGuide={careGuide}
+          weatherCondition={pot.weather_condition}
+          temperature={pot.temperature}
+          humidity={pot.humidity}
+          latitude={pot.latitude}
+          locationType={pot.location_type}
+        />
 
-        {/* Care Section */}
+        {/* Quick Info Cards */}
+        <PlantQuickInfo
+          registeredAt={pot.registered_at}
+          schedules={schedules}
+          careGuide={careGuide}
+        />
+
+        {/* Weather Alerts */}
+        <WeatherAlert
+          weatherCondition={pot.weather_condition}
+          weatherDescription={pot.weather_description}
+          temperature={pot.temperature}
+          humidity={pot.humidity}
+        />
+
+        {/* Care Management Link */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Care</Text>
+            <Text style={styles.sectionTitle}>Cuidados</Text>
             <TouchableOpacity onPress={onCareSettings}>
-              <Text style={styles.linkButton}>Manage Schedule</Text>
+              <Text style={styles.linkButton}>Configurar ⚙️</Text>
             </TouchableOpacity>
           </View>
-          <CareScheduleList potId={pot.id} />
+          {schedules.length === 0 && (
+            <TouchableOpacity
+              style={styles.emptyScheduleCard}
+              onPress={onCareSettings}
+            >
+              <Text style={styles.emptyScheduleIcon}>📋</Text>
+              <Text style={styles.emptyScheduleText}>
+                No tenés horarios configurados.{'\n'}
+                <Text style={styles.emptyScheduleLink}>
+                  Tocá aquí para crear uno
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* About Section (Collapsible details) */}
+        {/* History Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>Historial</Text>
+          <CareHistoryList potId={pot.id} />
+        </View>
+
+        {/* About Section (Technical Details — less prominent) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitleSmall}>Detalles</Text>
           <View style={styles.aboutCard}>
             <View style={styles.aboutRow}>
-              <Text style={styles.aboutLabel}>Registered</Text>
+              <Text style={styles.aboutLabel}>Registrada</Text>
               <Text style={styles.aboutValue}>
-                {formatDate(pot.registered_at)}
+                {new Date(pot.registered_at).toLocaleDateString('es-AR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </Text>
+            </View>
+
+            <View style={styles.aboutRow}>
+              <Text style={styles.aboutLabel}>Humedad umbral</Text>
+              <Text style={styles.aboutValue}>{pot.moisture_threshold}%</Text>
             </View>
 
             {pot.sensor_id && (
               <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Sensor Device</Text>
+                <Text style={styles.aboutLabel}>Sensor</Text>
                 <Text style={styles.aboutValue}>{pot.sensor_id}</Text>
               </View>
             )}
 
             {pot.latitude && pot.longitude && (
-              <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Location</Text>
+              <View style={[styles.aboutRow, { borderBottomWidth: 0 }]}>
+                <Text style={styles.aboutLabel}>Ubicación</Text>
                 <Text style={styles.aboutValue}>
                   {pot.address ||
                     `${pot.latitude.toFixed(4)}, ${pot.longitude.toFixed(4)}`}
                 </Text>
               </View>
             )}
-
-            {pot.weather_condition && (
-              <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Weather</Text>
-                <Text style={styles.aboutValue}>
-                  {pot.weather_description || pot.weather_condition}
-                  {pot.temperature ? ` (${pot.temperature}°C)` : ''}
-                </Text>
-              </View>
-            )}
           </View>
-        </View>
-
-        {/* History Section (Lower priority) */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>History</Text>
-          <CareHistoryList potId={pot.id} />
         </View>
 
         {/* Danger Zone */}
         <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
-          <Text style={styles.deleteLinkText}>Delete Pot</Text>
+          <Text style={styles.deleteLinkText}>Eliminar Pot</Text>
         </TouchableOpacity>
 
         {__DEV__ && (
           <View style={styles.debugSection}>
             <Text style={styles.debugTitle}>Debug Metadata</Text>
-
             <Text style={styles.debugContent}>
               {JSON.stringify(pot, null, 2)}
             </Text>
 
             <Text style={[styles.debugTitle, { marginTop: 16 }]}>
+              Care Schedules ({schedules.length})
+            </Text>
+            <Text style={styles.debugContent}>
+              {JSON.stringify(schedules, null, 2)}
+            </Text>
+
+            <Text style={[styles.debugTitle, { marginTop: 16 }]}>
               Species Care Guide
             </Text>
-            {careGuide ? (
-              <CareGuideCard guide={careGuide} />
-            ) : (
-              <Text style={styles.debugContent}>
-                Loading or not found... (Run seed.sql if needed)
-              </Text>
-            )}
+            <Text style={styles.debugContent}>
+              {careGuide
+                ? JSON.stringify(careGuide, null, 2)
+                : 'Not found or loading...'}
+            </Text>
           </View>
         )}
 
@@ -238,7 +291,7 @@ export const PotDetailScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f7f5',
   },
   header: {
     flexDirection: 'row',
@@ -247,34 +300,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f7f5',
     zIndex: 10,
   },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#333',
+    flex: 1,
+    textAlign: 'center',
+  },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e8f5e9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: '500',
+    fontSize: 18,
+    color: '#2e7d32',
+    fontWeight: '700',
   },
   editButtonHeader: {
-    padding: 8,
-    marginRight: -8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e8f5e9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   editButtonTextHeader: {
     fontSize: 16,
-    color: '#2e7d32',
-    fontWeight: '600',
   },
   scrollContent: {
     paddingBottom: 40,
   },
   heroSection: {
     alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#fff',
+    paddingVertical: 24,
+    paddingBottom: 20,
+    backgroundColor: '#edf7ed',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    marginBottom: 16,
   },
   imageContainer: {
     shadowColor: '#000',
@@ -287,66 +357,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   heroImage: {
-    width: 160,
-    height: 160,
-    borderRadius: 24,
+    width: 130,
+    height: 130,
+    borderRadius: 28,
     backgroundColor: '#f0f0f0',
   },
   placeholderImage: {
-    width: 160,
-    height: 160,
-    borderRadius: 24,
-    backgroundColor: '#e8f5e9',
+    width: 130,
+    height: 130,
+    borderRadius: 28,
+    backgroundColor: '#c8e6c9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderIcon: {
-    fontSize: 64,
+    fontSize: 52,
   },
   heroName: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1b5e20',
     marginBottom: 4,
     textAlign: 'center',
   },
   heroSpecies: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 32,
-  },
-  statusCard: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  statusLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#888',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  statusValue: {
-    fontSize: 16,
+    fontSize: 14,
+    color: '#4caf50',
     fontWeight: '600',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  stateChip: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+  },
+  stateChipText: {
+    fontSize: 13,
     color: '#2e7d32',
-    textAlign: 'center',
+    fontWeight: '600',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 28,
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -356,37 +416,74 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontWeight: '800',
+    color: '#1b5e20',
     marginBottom: 12,
+  },
+  sectionTitleSmall: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9e9e9e',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   linkButton: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2e7d32',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    overflow: 'hidden',
   },
-  aboutCard: {
+  emptyScheduleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+    gap: 12,
+  },
+  emptyScheduleIcon: {
+    fontSize: 28,
+  },
+  emptyScheduleText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  emptyScheduleLink: {
+    color: '#2e7d32',
+    fontWeight: '600',
+  },
+  aboutCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   aboutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
   aboutLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#888',
     flex: 1,
   },
   aboutValue: {
-    fontSize: 14,
-    color: '#1a1a1a',
+    fontSize: 13,
+    color: '#333',
     fontWeight: '500',
     flex: 2,
     textAlign: 'right',
@@ -395,14 +492,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     marginTop: 8,
+    marginHorizontal: 20,
+    borderRadius: 14,
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#ffcdd2',
   },
   deleteLinkText: {
-    color: '#d32f2f',
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#c62828',
+    fontSize: 14,
+    fontWeight: '700',
   },
   debugSection: {
     marginTop: 24,
+    marginHorizontal: 20,
     padding: 16,
     backgroundColor: '#f5f5f5',
     borderRadius: 8,

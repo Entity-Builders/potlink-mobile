@@ -35,6 +35,9 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
   const [moistureThreshold, setMoistureThreshold] = useState(
     pot.moisture_threshold,
   );
+  const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>(
+    pot.location_type || 'outdoor',
+  );
   const [loading, setLoading] = useState(false);
 
   const requestPermissions = async () => {
@@ -116,6 +119,7 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
         name: name.trim(),
         species: species.trim(),
         initial_state: initialState,
+        location_type: locationType,
         moisture_threshold: moistureThreshold,
         photo_url: newPhotoUrl,
       };
@@ -241,6 +245,44 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            <Text style={styles.label}>Ubicación</Text>
+            <View style={styles.stateButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.stateButton,
+                  locationType === 'indoor' && styles.stateButtonActive,
+                ]}
+                onPress={() => setLocationType('indoor')}
+                disabled={loading}
+              >
+                <Text
+                  style={[
+                    styles.stateButtonText,
+                    locationType === 'indoor' && styles.stateButtonTextActive,
+                  ]}
+                >
+                  🏠 Interior
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.stateButton,
+                  locationType === 'outdoor' && styles.stateButtonActive,
+                ]}
+                onPress={() => setLocationType('outdoor')}
+                disabled={loading}
+              >
+                <Text
+                  style={[
+                    styles.stateButtonText,
+                    locationType === 'outdoor' && styles.stateButtonTextActive,
+                  ]}
+                >
+                  🌳 Exterior
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.label}>

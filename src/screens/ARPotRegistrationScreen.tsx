@@ -12,7 +12,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { identifyPlant } from '@eb-packages/logic';
-import { createPot } from '@eb-packages/logic';
+import { createPot, createDefaultCareSchedules } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { ARGlassOverlay } from '../components/ARGlassOverlay';
 
@@ -37,6 +37,10 @@ export const ARPotRegistrationScreen = ({
   } | null>(null);
   const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [careInfo, setCareInfo] = useState<{
+    watering_frequency?: string;
+    fertilizer_frequency?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (permission && !permission.granted) {
@@ -84,6 +88,10 @@ export const ARPotRegistrationScreen = ({
             variety: result.variety,
             description: result.description,
           });
+          // Store care info for schedule creation
+          if (result.care_info) {
+            setCareInfo(result.care_info);
+          }
         } else {
           Alert.alert(
             'Not Identified',
@@ -112,12 +120,16 @@ export const ARPotRegistrationScreen = ({
         species: identifiedData.species,
         variety: identifiedData.variety,
         initial_state: 'young', // Default
+        location_type: 'outdoor', // Default
         moisture_threshold: 50, // Default
         photo_uri: capturedPhotoUri,
       };
 
       const result = await createPot(potData);
       if (result) {
+        // Auto-create care schedules
+        await createDefaultCareSchedules(result.id, careInfo || undefined);
+
         Alert.alert('Success', 'Pot registered! 🌱', [
           { text: 'OK', onPress: onSuccess },
         ]);
