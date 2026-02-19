@@ -6,9 +6,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Dimensions,
+  Image,
+  ScrollView,
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { identifyPlant } from '@eb-packages/logic';
@@ -16,7 +17,21 @@ import { createPot, createDefaultCareSchedules } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { ARGlassOverlay } from '../components/ARGlassOverlay';
 
-const { width } = Dimensions.get('window');
+interface CareInfo {
+  climate?: string;
+  watering_frequency?: string;
+  fertilizer_frequency?: string;
+  pruning_info?: string;
+  companions?: string;
+  care_level?: string;
+}
+
+interface IdentifiedData {
+  species: string;
+  variety?: string;
+  confidence?: string;
+  description?: string;
+}
 
 export const ARPotRegistrationScreen = ({
   onSuccess,
@@ -30,17 +45,12 @@ export const ARPotRegistrationScreen = ({
   const insets = useSafeAreaInsets();
 
   const [isScanning, setIsScanning] = useState(false);
-  const [identifiedData, setIdentifiedData] = useState<{
-    species: string;
-    variety?: string;
-    description?: string;
-  } | null>(null);
+  const [identifiedData, setIdentifiedData] = useState<IdentifiedData | null>(
+    null,
+  );
   const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [careInfo, setCareInfo] = useState<{
-    watering_frequency?: string;
-    fertilizer_frequency?: string;
-  } | null>(null);
+  const [careInfo, setCareInfo] = useState<CareInfo | null>(null);
 
   useEffect(() => {
     if (permission && !permission.granted) {
@@ -56,10 +66,10 @@ export const ARPotRegistrationScreen = ({
     return (
       <View style={styles.permissionContainer}>
         <Text style={styles.message}>
-          We need your permission to show the camera
+          Necesitamos permiso para usar la cámara
         </Text>
         <TouchableOpacity onPress={requestPermission} style={styles.button}>
-          <Text style={styles.buttonText}>Grant Permission</Text>
+          <Text style={styles.buttonText}>Dar Permiso</Text>
         </TouchableOpacity>
       </View>
     );
@@ -71,6 +81,7 @@ export const ARPotRegistrationScreen = ({
     setIsScanning(true);
     setIdentifiedData(null);
     setCapturedPhotoUri(null);
+    setCareInfo(null);
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
@@ -86,23 +97,23 @@ export const ARPotRegistrationScreen = ({
           setIdentifiedData({
             species: result.species,
             variety: result.variety,
+            confidence: result.confidence,
             description: result.description,
           });
-          // Store care info for schedule creation
           if (result.care_info) {
             setCareInfo(result.care_info);
           }
         } else {
           Alert.alert(
-            'Not Identified',
-            'Could not identify the plant. Try getting closer or better lighting.',
+            'No Identificada',
+            'No se pudo identificar la planta. Intentá acercarte más o mejorar la iluminación.',
           );
-          setCapturedPhotoUri(null); // Reset to allow trying again immediately
+          setCapturedPhotoUri(null);
         }
       }
     } catch (error) {
       console.error('Error scanning:', error);
-      Alert.alert('Error', 'Failed to scan plant.');
+      Alert.alert('Error', 'Falló el escaneo de la planta.');
     } finally {
       setIsScanning(false);
     }
@@ -119,26 +130,24 @@ export const ARPotRegistrationScreen = ({
           : identifiedData.species,
         species: identifiedData.species,
         variety: identifiedData.variety,
-        initial_state: 'young', // Default
-        location_type: 'outdoor', // Default
-        moisture_threshold: 50, // Default
+        initial_state: 'young',
+        location_type: 'outdoor',
+        moisture_threshold: 50,
         photo_uri: capturedPhotoUri,
       };
 
       const result = await createPot(potData);
       if (result) {
-        // Auto-create care schedules
         await createDefaultCareSchedules(result.id, careInfo || undefined);
-
-        Alert.alert('Success', 'Pot registered! 🌱', [
+        Alert.alert('¡Listo!', 'Maceta registrada 🌱', [
           { text: 'OK', onPress: onSuccess },
         ]);
       } else {
-        Alert.alert('Error', 'Failed to save pot.');
+        Alert.alert('Error', 'No se pudo guardar la maceta.');
       }
     } catch (error) {
       console.error('Save error:', error);
-      Alert.alert('Error', 'An error occurred while saving.');
+      Alert.alert('Error', 'Ocurrió un error al guardar.');
     } finally {
       setSaving(false);
     }
@@ -147,104 +156,188 @@ export const ARPotRegistrationScreen = ({
   const handleRetake = () => {
     setIdentifiedData(null);
     setCapturedPhotoUri(null);
+    setCareInfo(null);
   };
 
-  return (
-    <View style={styles.container}>
-      {capturedPhotoUri && !isScanning ? (
-        // Preview Mode
-        <View style={styles.previewContainer}>
-          {/* We could show the image here, but the camera preview behind the overlay might be confusing if static. 
-                 Actually, since we have the photo, let's just show the Card Overlay on top of the Camera View (frozen? No CameraView doesn't freeze easily).
-                 Let's stay in CameraView but overlay the result. 
-              */}
-          <CameraView style={styles.camera} ref={cameraRef} facing='back'>
-            <View style={styles.overlayContainer}>
-              {/* Result Card */}
-              {identifiedData && (
-                <View style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.iconContainer}>
-                      <Text style={styles.plantIcon}>🌿</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.plantName}>
-                        {identifiedData.species}
-                      </Text>
-                      {identifiedData.variety && (
-                        <Text style={styles.plantVariety}>
-                          {identifiedData.variety}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  {identifiedData.description && (
-                    <Text style={styles.description} numberOfLines={2}>
-                      {identifiedData.description}
-                    </Text>
-                  )}
+  // Build care info items for display
+  const careItems: { icon: string; label: string; value: string }[] = [];
+  if (careInfo) {
+    if (careInfo.care_level)
+      careItems.push({
+        icon: '📊',
+        label: 'Nivel de cuidado',
+        value: careInfo.care_level,
+      });
+    if (careInfo.watering_frequency)
+      careItems.push({
+        icon: '💧',
+        label: 'Riego',
+        value: careInfo.watering_frequency,
+      });
+    if (careInfo.fertilizer_frequency)
+      careItems.push({
+        icon: '🧪',
+        label: 'Fertilización',
+        value: careInfo.fertilizer_frequency,
+      });
+    if (careInfo.climate)
+      careItems.push({
+        icon: '🌡️',
+        label: 'Clima',
+        value: careInfo.climate,
+      });
+    if (careInfo.pruning_info)
+      careItems.push({
+        icon: '✂️',
+        label: 'Poda',
+        value: careInfo.pruning_info,
+      });
+    if (careInfo.companions)
+      careItems.push({
+        icon: '🌻',
+        label: 'Compañeras',
+        value: careInfo.companions,
+      });
+  }
 
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.retakeButton}
-                      onPress={handleRetake}
-                    >
-                      <Text style={styles.retakeText}>Retake</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.saveButton}
-                      onPress={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <ActivityIndicator color='#fff' />
-                      ) : (
-                        <Text style={styles.saveText}>Confirm & Save</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
+  // ---------- FULL-SCREEN RESULT VIEW ----------
+  if (capturedPhotoUri && identifiedData && !isScanning) {
+    return (
+      <View style={styles.resultContainer}>
+        <ScrollView
+          style={styles.resultScroll}
+          contentContainerStyle={[
+            styles.resultContent,
+            { paddingBottom: insets.bottom + 100 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Photo */}
+          <Image
+            source={{ uri: capturedPhotoUri }}
+            style={styles.resultPhoto}
+          />
+
+          {/* Header: Name + Variety */}
+          <View style={styles.resultHeader}>
+            <View style={styles.resultIconContainer}>
+              <Text style={styles.resultPlantIcon}>🌿</Text>
+            </View>
+            <View style={styles.resultTitleContainer}>
+              <Text style={styles.resultSpecies}>{identifiedData.species}</Text>
+              {identifiedData.variety && (
+                <Text style={styles.resultVariety}>
+                  {identifiedData.variety}
+                </Text>
               )}
             </View>
-          </CameraView>
-        </View>
-      ) : (
-        // Scanning Mode
-        <CameraView style={styles.camera} ref={cameraRef} facing='back'>
-          <View style={[styles.uiContainer, { paddingTop: insets.top }]}>
-            <TouchableOpacity style={styles.closeButton} onPress={onCancel}>
-              <Ionicons name='close' size={28} color='#fff' />
-            </TouchableOpacity>
-
-            <View style={styles.scanTarget}>
-              <ARGlassOverlay isScanning={isScanning} />
-            </View>
-
-            <View style={styles.bottomControls}>
-              <Text style={styles.hintText}>Point at a plant and tap Scan</Text>
-              <TouchableOpacity
-                style={styles.scanButton}
-                onPress={handleScan}
-                disabled={isScanning}
-              >
-                {isScanning ? (
-                  <ActivityIndicator size='large' color='#2e7d32' />
-                ) : (
-                  <View style={styles.scanButtonInner} />
-                )}
-              </TouchableOpacity>
-            </View>
+            {identifiedData.confidence && (
+              <View style={styles.confidenceBadge}>
+                <Text style={styles.confidenceText}>
+                  {identifiedData.confidence}
+                </Text>
+              </View>
+            )}
           </View>
-        </CameraView>
-      )}
+
+          {/* Description */}
+          {identifiedData.description && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Descripción</Text>
+              <Text style={styles.descriptionText}>
+                {identifiedData.description}
+              </Text>
+            </View>
+          )}
+
+          {/* Care Info */}
+          {careItems.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Cuidados</Text>
+              <View style={styles.careGrid}>
+                {careItems.map((item, index) => (
+                  <View key={index} style={styles.careCard}>
+                    <Text style={styles.careIcon}>{item.icon}</Text>
+                    <Text style={styles.careLabel}>{item.label}</Text>
+                    <Text style={styles.careValue}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Sticky Bottom Buttons */}
+        <View
+          style={[styles.stickyButtons, { paddingBottom: insets.bottom + 16 }]}
+        >
+          <TouchableOpacity style={styles.retakeButton} onPress={handleRetake}>
+            <Ionicons name='camera-reverse-outline' size={20} color='#636e72' />
+            <Text style={styles.retakeText}>Retomar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color='#fff' />
+            ) : (
+              <>
+                <Ionicons
+                  name='checkmark-circle-outline'
+                  size={20}
+                  color='#fff'
+                />
+                <Text style={styles.saveText}>Confirmar y Guardar</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ---------- SCANNING MODE ----------
+  return (
+    <View style={styles.container}>
+      <CameraView style={styles.camera} ref={cameraRef} facing='back'>
+        <View style={[styles.uiContainer, { paddingTop: insets.top }]}>
+          <TouchableOpacity style={styles.closeButton} onPress={onCancel}>
+            <Ionicons name='close' size={28} color='#fff' />
+          </TouchableOpacity>
+
+          <View style={styles.scanTarget}>
+            <ARGlassOverlay isScanning={isScanning} />
+          </View>
+
+          <View style={styles.bottomControls}>
+            <Text style={styles.hintText}>
+              Apuntá a una planta y tocá Escanear
+            </Text>
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={handleScan}
+              disabled={isScanning}
+            >
+              {isScanning ? (
+                <ActivityIndicator size='large' color='#2e7d32' />
+              ) : (
+                <View style={styles.scanButtonInner} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </CameraView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // ── Scanning Mode ──
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#000',
   },
   permissionContainer: {
     flex: 1,
@@ -312,83 +405,159 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000',
   },
-  previewContainer: {
+
+  // ── Full-Screen Result View ──
+  resultContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  resultScroll: {
     flex: 1,
   },
-  overlayContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 20,
-    paddingBottom: 50,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+  resultContent: {
+    paddingBottom: 120,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  resultPhoto: {
+    width: '100%',
+    height: 280,
+    backgroundColor: '#e0e0e0',
   },
-  cardHeader: {
+  resultHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    padding: 20,
+    paddingBottom: 8,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  resultIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#e8f5e9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
-  plantIcon: {
+  resultPlantIcon: {
+    fontSize: 26,
+  },
+  resultTitleContainer: {
+    flex: 1,
+  },
+  resultSpecies: {
     fontSize: 24,
-  },
-  plantName: {
-    fontSize: 20,
     fontWeight: 'bold',
-    color: '#2d3436',
+    color: '#1a1a2e',
   },
-  plantVariety: {
-    fontSize: 14,
+  resultVariety: {
+    fontSize: 15,
     color: '#636e72',
     marginTop: 2,
   },
-  description: {
-    fontSize: 14,
-    color: '#636e72',
-    lineHeight: 20,
-    marginBottom: 20,
+  confidenceBadge: {
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  actionButtons: {
+  confidenceText: {
+    fontSize: 12,
+    color: '#2e7d32',
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+
+  // ── Sections ──
+  section: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: '#4a4a5a',
+    lineHeight: 22,
+  },
+
+  // ── Care Grid ──
+  careGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  careCard: {
+    width: '47%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  careIcon: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
+  careLabel: {
+    fontSize: 12,
+    color: '#636e72',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  careValue: {
+    fontSize: 14,
+    color: '#1a1a2e',
+    fontWeight: '600',
+  },
+
+  // ── Sticky Buttons ──
+  stickyButtons: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    backgroundColor: '#f8f9fa',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
   },
   retakeButton: {
     flex: 1,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#f1f2f6',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: '#f1f2f6',
   },
   retakeText: {
     color: '#636e72',
     fontWeight: '600',
+    fontSize: 15,
   },
   saveButton: {
     flex: 2,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#2e7d32',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: '#2e7d32',
   },
   saveText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 15,
   },
 });
