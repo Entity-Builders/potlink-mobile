@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
-import { supabase } from '@eb-packages/core';
+import { supabase } from '@eb-packages/logic';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/screens/AuthScreen';
@@ -88,6 +88,7 @@ export default function App() {
             onAddPot={() => setNavigation({ screen: 'register' })}
             onPotPress={(pot) => setNavigation({ screen: 'detail', pot })}
             onOpenCalendar={() => setNavigation({ screen: 'calendar' })}
+            onLogout={() => setSession(null)}
           />
         );
 

@@ -13,7 +13,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { updatePot, uploadPotPhoto } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
-import { supabase } from '@eb-packages/core';
+import { supabase } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
 
 interface PotEditScreenProps {

@@ -12,13 +12,14 @@ import { getUserPots } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 import { Screen, SharedHeader } from '@eb-packages/ui';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '@eb-packages/core';
+import { supabase } from '@eb-packages/logic';
 
 interface PotsListScreenProps {
   session: Session | null;
   onAddPot: () => void;
   onPotPress: (pot: Pot) => void;
   onOpenCalendar: () => void;
+  onLogout: () => void;
 }
 
 export const PotsListScreen = ({
@@ -26,6 +27,7 @@ export const PotsListScreen = ({
   onAddPot,
   onPotPress,
   onOpenCalendar,
+  onLogout,
 }: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,9 +101,17 @@ export const PotsListScreen = ({
         onLogin={() => {
           // This shouldn't be called since we only show this screen when authenticated
           // but we need to provide a callback
-          supabase.auth.signOut();
         }}
-        onLogout={() => supabase.auth.signOut()}
+        onLogout={async () => {
+          try {
+            // Use local scope to clear session without server roundtrip
+            // Global signOut fails on this Supabase instance
+            await supabase.auth.signOut({ scope: 'local' });
+          } catch (e) {
+            console.error('Logout exception:', e);
+          }
+          onLogout();
+        }}
         title='PotLink'
         logo={<Text style={styles.logoEmoji}>🪴</Text>}
         themeColor='#2e7d32'
