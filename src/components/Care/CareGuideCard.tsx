@@ -28,6 +28,11 @@ export const CareGuideCard = ({ guide }: CareGuideCardProps) => {
         <InfoItem icon='💧' label='Watering' value={guide.watering_frequency} />
         <InfoItem icon='☀️' label='Climate' value={guide.climate} />
         <InfoItem
+          icon='🌤️'
+          label='Sun Exposure'
+          value={guide.light_requirements}
+        />
+        <InfoItem
           icon='🧪'
           label='Fertilizer'
           value={guide.fertilizer_frequency}

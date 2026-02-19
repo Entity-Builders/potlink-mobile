@@ -24,6 +24,7 @@ interface CareInfo {
   pruning_info?: string;
   companions?: string;
   care_level?: string;
+  sun_exposure?: string;
 }
 
 interface IdentifiedData {
@@ -179,6 +180,12 @@ export const ARPotRegistrationScreen = ({
         icon: '🧪',
         label: 'Fertilización',
         value: careInfo.fertilizer_frequency,
+      });
+    if (careInfo.sun_exposure)
+      careItems.push({
+        icon: '☀️',
+        label: 'Exposición solar',
+        value: careInfo.sun_exposure,
       });
     if (careInfo.climate)
       careItems.push({

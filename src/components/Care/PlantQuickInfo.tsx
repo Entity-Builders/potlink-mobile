@@ -141,6 +141,15 @@ export const PlantQuickInfo = ({
           </View>
         )}
 
+        {careGuide?.light_requirements && (
+          <View style={styles.pill}>
+            <View style={[styles.pillDot, { backgroundColor: '#ffab00' }]} />
+            <Text style={styles.pillText}>
+              ☀️ {careGuide.light_requirements}
+            </Text>
+          </View>
+        )}
+
         {careGuide?.climate && (
           <View style={styles.pill}>
             <View style={[styles.pillDot, { backgroundColor: '#ff6d00' }]} />
