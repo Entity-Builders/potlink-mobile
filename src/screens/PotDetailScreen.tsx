@@ -48,6 +48,10 @@ export const PotDetailScreen = ({
     getCareSchedules(pot.id).then(setSchedules);
   }, [pot.species, pot.id]);
 
+  const [activeTab, setActiveTab] = React.useState<
+    'resumen' | 'cuidados' | 'detalles'
+  >('resumen');
+
   const handleDelete = async () => {
     // For web, use window.confirm as fallback
     if (Platform.OS === 'web') {
@@ -112,174 +116,246 @@ export const PotDetailScreen = ({
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.imageContainer}>
-            {pot.photo_url ? (
-              <Image source={{ uri: pot.photo_url }} style={styles.heroImage} />
-            ) : (
-              <View style={styles.placeholderImage}>
-                <Text style={styles.placeholderIcon}>🌱</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.heroName}>{pot.name}</Text>
-          <Text style={styles.heroSpecies}>{pot.species}</Text>
-          <View style={styles.chipRow}>
-            <View style={styles.stateChip}>
-              <Text style={styles.stateChipText}>
-                {getStateLabel(pot.initial_state)}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.stateChip,
-                pot.location_type === 'indoor'
-                  ? { backgroundColor: '#fff3e0', borderColor: '#ffe0b2' }
-                  : { backgroundColor: '#e8f5e9', borderColor: '#c8e6c9' },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.stateChipText,
-                  {
-                    color:
-                      pot.location_type === 'indoor' ? '#e65100' : '#2e7d32',
-                  },
-                ]}
-              >
-                {pot.location_type === 'indoor' ? '🏠 Interior' : '🌳 Exterior'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Smart Plant Advisor — contextual Q&A */}
-        <PlantAdvisor
-          species={pot.species}
-          registeredAt={pot.registered_at}
-          schedules={schedules}
-          careGuide={careGuide}
-          weatherCondition={pot.weather_condition}
-          temperature={pot.temperature}
-          humidity={pot.humidity}
-          latitude={pot.latitude}
-          locationType={pot.location_type}
-        />
-
-        {/* Quick Info Cards */}
-        <PlantQuickInfo
-          registeredAt={pot.registered_at}
-          schedules={schedules}
-          careGuide={careGuide}
-        />
-
-        {/* Weather Alerts */}
-        <WeatherAlert
-          weatherCondition={pot.weather_condition}
-          weatherDescription={pot.weather_description}
-          temperature={pot.temperature}
-          humidity={pot.humidity}
-        />
-
-        {/* Care Management Link */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Cuidados</Text>
-            <TouchableOpacity onPress={onCareSettings}>
-              <Text style={styles.linkButton}>Configurar ⚙️</Text>
-            </TouchableOpacity>
-          </View>
-          {schedules.length === 0 && (
-            <TouchableOpacity
-              style={styles.emptyScheduleCard}
-              onPress={onCareSettings}
-            >
-              <Text style={styles.emptyScheduleIcon}>📋</Text>
-              <Text style={styles.emptyScheduleText}>
-                No tenés horarios configurados.{'\n'}
-                <Text style={styles.emptyScheduleLink}>
-                  Tocá aquí para crear uno
-                </Text>
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* History Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Historial</Text>
-          <CareHistoryList potId={pot.id} />
-        </View>
-
-        {/* About Section (Technical Details — less prominent) */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitleSmall}>Detalles</Text>
-          <View style={styles.aboutCard}>
-            <View style={styles.aboutRow}>
-              <Text style={styles.aboutLabel}>Registrada</Text>
-              <Text style={styles.aboutValue}>
-                {new Date(pot.registered_at).toLocaleDateString('es-AR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </Text>
-            </View>
-
-            <View style={styles.aboutRow}>
-              <Text style={styles.aboutLabel}>Humedad umbral</Text>
-              <Text style={styles.aboutValue}>{pot.moisture_threshold}%</Text>
-            </View>
-
-            {pot.sensor_id && (
-              <View style={styles.aboutRow}>
-                <Text style={styles.aboutLabel}>Sensor</Text>
-                <Text style={styles.aboutValue}>{pot.sensor_id}</Text>
-              </View>
-            )}
-
-            {pot.latitude && pot.longitude && (
-              <View style={[styles.aboutRow, { borderBottomWidth: 0 }]}>
-                <Text style={styles.aboutLabel}>Ubicación</Text>
-                <Text style={styles.aboutValue}>
-                  {pot.address ||
-                    `${pot.latitude.toFixed(4)}, ${pot.longitude.toFixed(4)}`}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Danger Zone */}
-        <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
-          <Text style={styles.deleteLinkText}>Eliminar Pot</Text>
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[
+            styles.tabItem,
+            activeTab === 'resumen' && styles.tabItemActive,
+          ]}
+          onPress={() => setActiveTab('resumen')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'resumen' && styles.tabTextActive,
+            ]}
+          >
+            Resumen
+          </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabItem,
+            activeTab === 'cuidados' && styles.tabItemActive,
+          ]}
+          onPress={() => setActiveTab('cuidados')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'cuidados' && styles.tabTextActive,
+            ]}
+          >
+            Cuidados
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabItem,
+            activeTab === 'detalles' && styles.tabItemActive,
+          ]}
+          onPress={() => setActiveTab('detalles')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'detalles' && styles.tabTextActive,
+            ]}
+          >
+            Detalles
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {__DEV__ && (
-          <View style={styles.debugSection}>
-            <Text style={styles.debugTitle}>Debug Metadata</Text>
-            <Text style={styles.debugContent}>
-              {JSON.stringify(pot, null, 2)}
-            </Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {activeTab === 'resumen' && (
+          <>
+            {/* Hero Section */}
+            <View style={styles.heroSection}>
+              <View style={styles.imageContainer}>
+                {pot.photo_url ? (
+                  <Image
+                    source={{ uri: pot.photo_url }}
+                    style={styles.heroImage}
+                  />
+                ) : (
+                  <View style={styles.placeholderImage}>
+                    <Text style={styles.placeholderIcon}>🌱</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.heroName}>{pot.name}</Text>
+              <Text style={styles.heroSpecies}>{pot.species}</Text>
+              <View style={styles.chipRow}>
+                <View style={styles.stateChip}>
+                  <Text style={styles.stateChipText}>
+                    {getStateLabel(pot.initial_state)}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.stateChip,
+                    pot.location_type === 'indoor'
+                      ? { backgroundColor: '#fff3e0', borderColor: '#ffe0b2' }
+                      : { backgroundColor: '#e8f5e9', borderColor: '#c8e6c9' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.stateChipText,
+                      {
+                        color:
+                          pot.location_type === 'indoor'
+                            ? '#e65100'
+                            : '#2e7d32',
+                      },
+                    ]}
+                  >
+                    {pot.location_type === 'indoor'
+                      ? '🏠 Interior'
+                      : '🌳 Exterior'}
+                  </Text>
+                </View>
+              </View>
+            </View>
 
-            <Text style={[styles.debugTitle, { marginTop: 16 }]}>
-              Care Schedules ({schedules.length})
-            </Text>
-            <Text style={styles.debugContent}>
-              {JSON.stringify(schedules, null, 2)}
-            </Text>
+            {/* Smart Plant Advisor — contextual Q&A */}
+            <PlantAdvisor
+              species={pot.species}
+              registeredAt={pot.registered_at}
+              schedules={schedules}
+              careGuide={careGuide}
+              weatherCondition={pot.weather_condition}
+              temperature={pot.temperature}
+              humidity={pot.humidity}
+              latitude={pot.latitude}
+              locationType={pot.location_type}
+            />
 
-            <Text style={[styles.debugTitle, { marginTop: 16 }]}>
-              Species Care Guide
-            </Text>
-            <Text style={styles.debugContent}>
-              {careGuide
-                ? JSON.stringify(careGuide, null, 2)
-                : 'Not found or loading...'}
-            </Text>
-          </View>
+            {/* Quick Info Cards */}
+            <PlantQuickInfo
+              registeredAt={pot.registered_at}
+              schedules={schedules}
+              careGuide={careGuide}
+            />
+
+            {/* Weather Alerts */}
+            <WeatherAlert
+              weatherCondition={pot.weather_condition}
+              weatherDescription={pot.weather_description}
+              temperature={pot.temperature}
+              humidity={pot.humidity}
+            />
+          </>
+        )}
+
+        {activeTab === 'cuidados' && (
+          <>
+            {/* Care Management Link */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Cuidados programados</Text>
+                <TouchableOpacity onPress={onCareSettings}>
+                  <Text style={styles.linkButton}>Configurar ⚙️</Text>
+                </TouchableOpacity>
+              </View>
+              {schedules.length === 0 && (
+                <TouchableOpacity
+                  style={styles.emptyScheduleCard}
+                  onPress={onCareSettings}
+                >
+                  <Text style={styles.emptyScheduleIcon}>📋</Text>
+                  <Text style={styles.emptyScheduleText}>
+                    No tenés horarios configurados.{'\n'}
+                    <Text style={styles.emptyScheduleLink}>
+                      Tocá aquí para crear uno
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* History Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Historial de acciones</Text>
+              <CareHistoryList potId={pot.id} />
+            </View>
+          </>
+        )}
+
+        {activeTab === 'detalles' && (
+          <>
+            {/* About Section (Technical Details — less prominent) */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitleSmall}>Más info</Text>
+              <View style={styles.aboutCard}>
+                <View style={styles.aboutRow}>
+                  <Text style={styles.aboutLabel}>Registrada</Text>
+                  <Text style={styles.aboutValue}>
+                    {new Date(pot.registered_at).toLocaleDateString('es-AR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                </View>
+
+                <View style={styles.aboutRow}>
+                  <Text style={styles.aboutLabel}>Humedad umbral</Text>
+                  <Text style={styles.aboutValue}>
+                    {pot.moisture_threshold}%
+                  </Text>
+                </View>
+
+                {pot.sensor_id && (
+                  <View style={styles.aboutRow}>
+                    <Text style={styles.aboutLabel}>Sensor</Text>
+                    <Text style={styles.aboutValue}>{pot.sensor_id}</Text>
+                  </View>
+                )}
+
+                {pot.latitude && pot.longitude && (
+                  <View style={[styles.aboutRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.aboutLabel}>Ubicación</Text>
+                    <Text style={styles.aboutValue}>
+                      {pot.address ||
+                        `${pot.latitude.toFixed(4)}, ${pot.longitude.toFixed(4)}`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Danger Zone */}
+            <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
+              <Text style={styles.deleteLinkText}>Eliminar Pot</Text>
+            </TouchableOpacity>
+
+            {__DEV__ && (
+              <View style={styles.debugSection}>
+                <Text style={styles.debugTitle}>Debug Metadata</Text>
+                <Text style={styles.debugContent}>
+                  {JSON.stringify(pot, null, 2)}
+                </Text>
+
+                <Text style={[styles.debugTitle, { marginTop: 16 }]}>
+                  Care Schedules ({schedules.length})
+                </Text>
+                <Text style={styles.debugContent}>
+                  {JSON.stringify(schedules, null, 2)}
+                </Text>
+
+                <Text style={[styles.debugTitle, { marginTop: 16 }]}>
+                  Species Care Guide
+                </Text>
+                <Text style={styles.debugContent}>
+                  {careGuide
+                    ? JSON.stringify(careGuide, null, 2)
+                    : 'Not found or loading...'}
+                </Text>
+              </View>
+            )}
+          </>
         )}
 
         <View style={{ height: 40 }} />
@@ -334,8 +410,36 @@ const styles = StyleSheet.create({
   editButtonTextHeader: {
     fontSize: 16,
   },
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 0,
+    backgroundColor: '#f5f7f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabItemActive: {
+    borderBottomColor: '#2e7d32',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#757575',
+  },
+  tabTextActive: {
+    color: '#2e7d32',
+    fontWeight: '800',
+  },
   scrollContent: {
     paddingBottom: 40,
+    paddingTop: 16,
   },
   heroSection: {
     alignItems: 'center',
