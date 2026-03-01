@@ -6,10 +6,7 @@
     "base": {
       "cache": {
         "key": "potlink-{{ checksum 'yarn.lock' }}",
-        "customPaths": [
-          "node_modules",
-          "apps/potlink-mobile/node_modules"
-        ]
+        "customPaths": ["node_modules", "apps/potlink-mobile/node_modules"]
       }
     },
     "development": {
@@ -62,6 +59,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6759846532"
+      }
+    }
   }
 }
