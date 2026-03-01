@@ -3,7 +3,17 @@
     "version": ">= 7.0.0"
   },
   "build": {
+    "base": {
+      "cache": {
+        "key": "potlink-{{ checksum 'yarn.lock' }}",
+        "customPaths": [
+          "node_modules",
+          "apps/potlink-mobile/node_modules"
+        ]
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
@@ -17,6 +27,7 @@
       }
     },
     "development-simulator": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
@@ -33,6 +44,7 @@
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "channel": "preview",
       "node": "22.12.0",
@@ -43,6 +55,7 @@
       }
     },
     "production": {
+      "extends": "base",
       "channel": "production",
       "node": "22.12.0",
       "env": {}
