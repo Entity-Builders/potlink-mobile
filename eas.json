@@ -8,6 +8,7 @@
       "distribution": "internal",
       "node": "22.12.0",
       "env": {
+        "APP_ENV": "development",
         "EXPO_PUBLIC_SUPABASE_URL": "http://192.168.1.95:54325",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
       }
@@ -20,16 +21,24 @@
         "simulator": true
       },
       "env": {
+        "APP_ENV": "development",
         "EXPO_PUBLIC_SUPABASE_URL": "http://127.0.0.1:54321",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "22.12.0",
+      "env": {
+        "APP_ENV": "preview"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "node": "22.12.0"
+      "node": "22.12.0",
+      "env": {
+        "APP_ENV": "production"
+      }
     }
   },
   "submit": {
