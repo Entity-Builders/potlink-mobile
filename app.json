@@ -14,6 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "2",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow PotLink to use speech recognition to transcribe your voice input.",
         "NSMicrophoneUsageDescription": "Allow PotLink to access your microphone for voice input functionality.",
