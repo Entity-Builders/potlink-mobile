@@ -10,9 +10,14 @@ import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
 import type { Pot } from '@eb-packages/garden';
 import { NotificationService } from './src/services/NotificationService';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { analytics, initAnalytics } from './src/services/analyticsService';
 
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
 import { CareCalendarScreen } from './src/screens/CareCalendarScreen';
+
+// Initialize analytics as early as possible
+initAnalytics();
 
 type Screen =
   | 'list'
@@ -34,12 +39,9 @@ export default function App() {
   });
 
   useEffect(() => {
-    // Check initial session
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.log('Error getting session:', error);
-        // If the refresh token is invalid, clear the session
+        analytics.captureError(error, { screen: 'App', action: 'getSession' });
         if (error.message && error.message.includes('Invalid Refresh Token')) {
           supabase.auth.signOut();
           setSession(null);
@@ -49,33 +51,43 @@ export default function App() {
       setSession(session);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // Reset to list screen when logging in/out
       setNavigation({ screen: 'list' });
+
+      // Identify user in PostHog on login, reset on logout
+      if (session?.user?.id) {
+        analytics.identify(session.user.id, { email: session.user.email });
+      } else {
+        analytics.reset();
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    // Request notification permissions on mount
-    NotificationService.registerForPushNotificationsAsync().then((token) => {
-      if (token) console.log('Push token:', token);
-    });
+    NotificationService.registerForPushNotificationsAsync()
+      .then((token) => {
+        if (token) console.log('Push token:', token);
+      })
+      .catch((err) => {
+        analytics.captureError(err, { screen: 'App', action: 'registerPushNotifications' });
+      });
   }, []);
 
   if (!session) {
     return (
-      <View style={styles.container}>
-        <AuthScreen
-          onNavigateToList={() => setNavigation({ screen: 'list' })}
-        />
-        <StatusBar style='auto' />
-      </View>
+      <ErrorBoundary>
+        <View style={styles.container}>
+          <AuthScreen
+            onNavigateToList={() => setNavigation({ screen: 'list' })}
+          />
+          <StatusBar style='auto' />
+        </View>
+      </ErrorBoundary>
     );
   }
 
@@ -147,12 +159,14 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <View style={styles.container}>
-        {renderScreen()}
-        <StatusBar style='auto' />
-      </View>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <View style={styles.container}>
+          {renderScreen()}
+          <StatusBar style='auto' />
+        </View>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
