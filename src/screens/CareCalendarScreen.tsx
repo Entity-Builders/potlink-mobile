@@ -12,6 +12,7 @@ import {
 import { Screen } from '@eb-packages/ui';
 import { getAllUserCareSchedules, logCare } from '@eb-packages/logic';
 import type { CareSchedule } from '@eb-packages/garden';
+import { analytics } from '../services/analyticsService';
 
 export const CareCalendarScreen = ({ navigation }: any) => {
   const [schedules, setSchedules] = useState<
@@ -26,6 +27,10 @@ export const CareCalendarScreen = ({ navigation }: any) => {
       setSchedules(data);
     } catch (error) {
       console.error(error);
+      analytics.captureError(error, {
+        screen: 'CareCalendarScreen',
+        action: 'fetchData',
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);

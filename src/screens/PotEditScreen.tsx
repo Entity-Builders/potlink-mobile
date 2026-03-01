@@ -15,6 +15,7 @@ import { updatePot, uploadPotPhoto } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 import { supabase } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
+import { analytics } from '../services/analyticsService';
 
 interface PotEditScreenProps {
   pot: Pot;
@@ -135,6 +136,11 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
       }
     } catch (error) {
       console.error('Error updating pot:', error);
+      analytics.captureError(error, {
+        screen: 'PotEditScreen',
+        action: 'handleSave',
+        potId: pot.id,
+      });
       Alert.alert('Error', 'An unexpected error occurred.');
     } finally {
       setLoading(false);

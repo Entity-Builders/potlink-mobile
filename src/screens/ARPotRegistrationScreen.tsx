@@ -16,6 +16,7 @@ import { identifyPlant } from '@eb-packages/logic';
 import { createPot, createDefaultCareSchedules } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { ARGlassOverlay } from '../components/ARGlassOverlay';
+import { analytics } from '../services/analyticsService';
 
 interface CareInfo {
   climate?: string;
@@ -114,6 +115,10 @@ export const ARPotRegistrationScreen = ({
       }
     } catch (error) {
       console.error('Error scanning:', error);
+      analytics.captureError(error, {
+        screen: 'ARPotRegistrationScreen',
+        action: 'scan',
+      });
       Alert.alert('Error', 'Falló el escaneo de la planta.');
     } finally {
       setIsScanning(false);
@@ -148,6 +153,10 @@ export const ARPotRegistrationScreen = ({
       }
     } catch (error) {
       console.error('Save error:', error);
+      analytics.captureError(error, {
+        screen: 'ARPotRegistrationScreen',
+        action: 'save',
+      });
       Alert.alert('Error', 'Ocurrió un error al guardar.');
     } finally {
       setSaving(false);

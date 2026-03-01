@@ -1,17 +1,17 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
-const config = getDefaultConfig(__dirname);
-
-// Watch the shared packages directory
-const workspaceRoot = path.resolve(__dirname, '../../packages');
 const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, '../..');
 
-config.watchFolders = [workspaceRoot];
+const config = getDefaultConfig(projectRoot);
+
+// Watch monorepo root and packages so Metro hot-reloads on shared package changes
+config.watchFolders = [monorepoRoot];
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
+  path.resolve(monorepoRoot, 'node_modules'),
 ];
 
 module.exports = config;

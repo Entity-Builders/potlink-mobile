@@ -11,6 +11,7 @@
     "build:ios:device": "npx eas build --profile development --platform ios"
   },
   "dependencies": {
+    "@eb-packages/analytics": "*",
     "@eb-packages/garden": "*",
     "@eb-packages/ui": "*",
     "expo": "~54.0.33",

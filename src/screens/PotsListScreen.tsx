@@ -13,6 +13,7 @@ import type { Pot } from '@eb-packages/garden';
 import { Screen, SharedHeader } from '@eb-packages/ui';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@eb-packages/logic';
+import { analytics } from '../services/analyticsService';
 
 interface PotsListScreenProps {
   session: Session | null;
@@ -109,6 +110,10 @@ export const PotsListScreen = ({
             await supabase.auth.signOut({ scope: 'local' });
           } catch (e) {
             console.error('Logout exception:', e);
+            analytics.captureError(e, {
+              screen: 'PotsListScreen',
+              action: 'logout',
+            });
           }
           onLogout();
         }}
