@@ -31,10 +31,13 @@ module.exports = {
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
-    // EAS Update — fingerprint policy auto-detects native changes.
-    // OTA is safe when fingerprint matches; full build required when it changes.
+    // Runtime version = app version string (e.g., "1.0.4").
+    // We use 'appVersion' policy (not 'fingerprint') because this is a managed
+    // Expo workflow project — no native ios/android folders are committed.
+    // The fingerprint policy generates different hashes locally vs EAS (EAS
+    // generates ios/ dir at build time which we don't have locally).
     runtimeVersion: {
-      policy: 'fingerprint',
+      policy: 'appVersion',
     },
     updates: {
       url: 'https://u.expo.dev/537ea184-1aa0-4198-9873-80eb9b3f6bb5',
