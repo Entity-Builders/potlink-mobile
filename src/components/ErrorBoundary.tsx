@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { analytics } from './analyticsService';
+import { analytics } from '../services/analyticsService';
 
 interface Props {
   children: React.ReactNode;
