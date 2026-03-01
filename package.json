@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "eas:config": "node scripts/generate-eas-config.js",
     "build:ios": "node scripts/generate-eas-config.js && npx eas build --profile development-simulator --platform ios",
-    "build:ios:device": "node scripts/generate-eas-config.js && npx eas build --profile development --platform ios"
+    "build:ios:device": "node scripts/generate-eas-config.js && npx eas build --profile development --platform ios",
+    "release": "node scripts/release.js"
   },
   "dependencies": {
     "@eb-packages/analytics": "*",
@@ -25,6 +26,7 @@
     "expo-notifications": "~0.32.16",
     "expo-speech-recognition": "^3.1.0",
     "expo-status-bar": "~3.0.9",
+    "expo-updates": "^55.0.12",
     "posthog-react-native": "^4.36.1",
     "react": "19.1.0",
     "react-native": "0.81.5",
