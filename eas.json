@@ -6,6 +6,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.12.0",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "http://192.168.1.95:54325",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
@@ -14,6 +15,7 @@
     "development-simulator": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.12.0",
       "ios": {
         "simulator": true
       },
