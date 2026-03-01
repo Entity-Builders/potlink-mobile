@@ -26,11 +26,7 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "EXPO_PUBLIC_POTLINK_SUPABASE_URL_PROD",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "EXPO_PUBLIC_POTLINK_SUPABASE_ANON_KEY_PROD"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {
