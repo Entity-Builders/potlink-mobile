@@ -39,7 +39,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier,
-      buildNumber: '2',
+      buildNumber: '2.1',
       infoPlist: {
         NSSpeechRecognitionUsageDescription:
           'Allow PotLink to use speech recognition to transcribe your voice input.',
