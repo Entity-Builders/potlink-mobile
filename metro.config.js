@@ -6,8 +6,9 @@ const monorepoRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch monorepo root and packages so Metro hot-reloads on shared package changes
-config.watchFolders = [monorepoRoot];
+// Extend (don't replace) Expo's default watchFolders to include monorepo root
+// This lets Metro hot-reload on shared package changes without breaking Expo defaults
+config.watchFolders = [...(config.watchFolders ?? []), monorepoRoot];
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
