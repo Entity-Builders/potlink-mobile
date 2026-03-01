@@ -26,7 +26,7 @@ module.exports = {
   expo: {
     name,
     slug: 'potlink-mobile',
-    version: '1.0.0',
+    version: '1.1.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -39,7 +39,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier,
-      buildNumber: '2.1',
+      buildNumber: '3',
       infoPlist: {
         NSSpeechRecognitionUsageDescription:
           'Allow PotLink to use speech recognition to transcribe your voice input.',
