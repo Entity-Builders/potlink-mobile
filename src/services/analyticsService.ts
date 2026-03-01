@@ -23,7 +23,7 @@ export function initAnalytics(): void {
   analytics.setGlobalProperties({
     app: 'potlink',
     platform: 'ios',
-    environment: process.env.EXPO_PUBLIC_POSTHOG_API_KEY
+    environment: process.env.EXPO_PUBLIC_POTLINK_POSTHOG_API_KEY
       ? 'production'
       : 'development',
   });

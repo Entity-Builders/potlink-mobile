@@ -7,8 +7,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:ios": "npx eas build --profile development-simulator --platform ios",
-    "build:ios:device": "npx eas build --profile development --platform ios"
+    "eas:config": "node scripts/generate-eas-config.js",
+    "build:ios": "node scripts/generate-eas-config.js && npx eas build --profile development-simulator --platform ios",
+    "build:ios:device": "node scripts/generate-eas-config.js && npx eas build --profile development --platform ios"
   },
   "dependencies": {
     "@eb-packages/analytics": "*",
