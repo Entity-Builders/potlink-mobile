@@ -93,7 +93,11 @@ function buildEasConfig() {
       },
     },
     submit: {
-      production: {},
+      production: {
+        ios: {
+          ascAppId: '6759846532',
+        },
+      },
     },
   };
 }
