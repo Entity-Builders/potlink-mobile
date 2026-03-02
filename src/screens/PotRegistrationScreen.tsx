@@ -20,12 +20,19 @@ import {
 } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { VoiceInput, Screen } from '@eb-packages/ui';
+import {
+  analytics,
+  trackPotCreated,
+  trackPlantIdentified,
+} from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 export const PotRegistrationScreen = ({
   onSuccess,
 }: {
   onSuccess?: () => void;
 }) => {
+  useScreenLogger('PotRegistrationScreen');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
@@ -111,6 +118,8 @@ export const PotRegistrationScreen = ({
           setVariety(result.variety);
         }
 
+        trackPlantIdentified(result.species, result.confidence, 'manual_photo');
+
         Alert.alert(
           'Planta Identificada! 🌱',
           `${result.species}${result.variety ? ` - ${result.variety}` : ''}\n\n${result.description || ''}`,
@@ -130,6 +139,10 @@ export const PotRegistrationScreen = ({
       }
     } catch (error) {
       console.error('Error identifying plant:', error);
+      analytics.captureError(error, {
+        screen: 'PotRegistrationScreen',
+        action: 'handleIdentifyPlant',
+      });
       Alert.alert(
         'Error',
         'Hubo un problema al analizar la imagen. Por favor intenta de nuevo.',
@@ -173,6 +186,7 @@ export const PotRegistrationScreen = ({
       const result = await createPot(potData);
 
       if (result) {
+        trackPotCreated(result.id, species.trim(), 'manual');
         // Auto-create care schedules
         setLoadingStatus('Setting up care schedules...');
         await createDefaultCareSchedules(result.id, careInfo || undefined);
@@ -193,6 +207,10 @@ export const PotRegistrationScreen = ({
       }
     } catch (error) {
       console.error('Error registering pot:', error);
+      analytics.captureError(error, {
+        screen: 'PotRegistrationScreen',
+        action: 'handleSubmit',
+      });
       Alert.alert('Error', 'An unexpected error occurred.');
     } finally {
       setLoading(false);

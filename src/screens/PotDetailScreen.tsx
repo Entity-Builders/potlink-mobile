@@ -20,6 +20,8 @@ import { CareHistoryList } from '../components/Care/CareHistoryList';
 import { PlantQuickInfo } from '../components/Care/PlantQuickInfo';
 import { WeatherAlert } from '../components/Care/WeatherAlert';
 import { PlantAdvisor } from '../components/Care/PlantAdvisor';
+import { analytics, trackPotDeleted } from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 interface PotDetailScreenProps {
   pot: Pot;
@@ -41,16 +43,39 @@ export const PotDetailScreen = ({
   );
   const [schedules, setSchedules] = React.useState<CareSchedule[]>([]);
 
+  useScreenLogger('PotDetailScreen');
+
   React.useEffect(() => {
     if (pot.species) {
-      getSpeciesCareGuide(pot.species).then(setCareGuide);
+      getSpeciesCareGuide(pot.species)
+        .then(setCareGuide)
+        .catch((err) =>
+          analytics.captureError(err, {
+            screen: 'PotDetailScreen',
+            action: 'getSpeciesCareGuide',
+            species: pot.species,
+          }),
+        );
     }
-    getCareSchedules(pot.id).then(setSchedules);
+    getCareSchedules(pot.id)
+      .then(setSchedules)
+      .catch((err) =>
+        analytics.captureError(err, {
+          screen: 'PotDetailScreen',
+          action: 'getCareSchedules',
+          potId: pot.id,
+        }),
+      );
   }, [pot.species, pot.id]);
 
   const [activeTab, setActiveTab] = React.useState<
     'resumen' | 'cuidados' | 'detalles'
   >('resumen');
+
+  const handleTabPress = (tab: 'resumen' | 'cuidados' | 'detalles') => {
+    analytics.track('pot_detail_tab_switched', { tab, pot_id: pot.id });
+    setActiveTab(tab);
+  };
 
   const handleDelete = async () => {
     // For web, use window.confirm as fallback
@@ -82,6 +107,7 @@ export const PotDetailScreen = ({
           onPress: async () => {
             const success = await deletePot(pot.id);
             if (success) {
+              trackPotDeleted(pot.id);
               Alert.alert('Listo', 'Pot eliminado', [
                 { text: 'OK', onPress: onDeleted },
               ]);
@@ -122,7 +148,7 @@ export const PotDetailScreen = ({
             styles.tabItem,
             activeTab === 'resumen' && styles.tabItemActive,
           ]}
-          onPress={() => setActiveTab('resumen')}
+          onPress={() => handleTabPress('resumen')}
         >
           <Text
             style={[
@@ -138,7 +164,7 @@ export const PotDetailScreen = ({
             styles.tabItem,
             activeTab === 'cuidados' && styles.tabItemActive,
           ]}
-          onPress={() => setActiveTab('cuidados')}
+          onPress={() => handleTabPress('cuidados')}
         >
           <Text
             style={[
@@ -154,7 +180,7 @@ export const PotDetailScreen = ({
             styles.tabItem,
             activeTab === 'detalles' && styles.tabItemActive,
           ]}
-          onPress={() => setActiveTab('detalles')}
+          onPress={() => handleTabPress('detalles')}
         >
           <Text
             style={[

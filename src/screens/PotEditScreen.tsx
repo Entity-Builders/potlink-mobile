@@ -15,7 +15,8 @@ import { updatePot, uploadPotPhoto } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 import { supabase } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
-import { analytics } from '../services/analyticsService';
+import { analytics, trackPotEdited } from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 interface PotEditScreenProps {
   pot: Pot;
@@ -24,6 +25,7 @@ interface PotEditScreenProps {
 }
 
 export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
+  useScreenLogger('PotEditScreen');
   const [photoUri, setPhotoUri] = useState<string | null>(
     pot.photo_url || null,
   );
@@ -128,6 +130,7 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
       const result = await updatePot(pot.id, updates);
 
       if (result) {
+        trackPotEdited(pot.id);
         Alert.alert('Success', 'Pot updated successfully! 🌱', [
           { text: 'OK', onPress: () => onSaved(result) },
         ]);

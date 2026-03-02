@@ -13,6 +13,8 @@ import {
 import { Screen } from '@eb-packages/ui';
 import type { Pot, CareType } from '@eb-packages/garden';
 import { upsertCareSchedule } from '@eb-packages/logic';
+import { analytics } from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 interface CareSettingsScreenProps {
   pot: Pot;
@@ -23,6 +25,7 @@ export const CareSettingsScreen = ({
   pot,
   onBack,
 }: CareSettingsScreenProps) => {
+  useScreenLogger('CareSettingsScreen');
   const [selectedType, setSelectedType] = useState<CareType>('watering');
   const [frequency, setFrequency] = useState('7');
   const [notes, setNotes] = useState('');
@@ -43,19 +46,39 @@ export const CareSettingsScreen = ({
     }
 
     setSaving(true);
-    const result = await upsertCareSchedule({
-      pot_id: pot.id,
-      care_type: selectedType,
-      frequency_days: parseInt(frequency),
-      notes: notes,
-    });
-    setSaving(false);
+    try {
+      const result = await upsertCareSchedule({
+        pot_id: pot.id,
+        care_type: selectedType,
+        frequency_days: parseInt(frequency),
+        notes: notes,
+      });
 
-    if (result) {
-      alert('Schedule saved successfully!');
-      onBack();
-    } else {
-      alert('Failed to save schedule. Please try again.');
+      if (result) {
+        analytics.track('care_schedule_saved', {
+          pot_id: pot.id,
+          care_type: selectedType,
+          frequency_days: parseInt(frequency),
+        });
+        alert('Schedule saved successfully!');
+        onBack();
+      } else {
+        analytics.captureError(new Error('upsertCareSchedule returned null'), {
+          screen: 'CareSettingsScreen',
+          action: 'handleSave',
+          potId: pot.id,
+        });
+        alert('Failed to save schedule. Please try again.');
+      }
+    } catch (error) {
+      analytics.captureError(error, {
+        screen: 'CareSettingsScreen',
+        action: 'handleSave',
+        potId: pot.id,
+      });
+      alert('An unexpected error occurred.');
+    } finally {
+      setSaving(false);
     }
   };
 

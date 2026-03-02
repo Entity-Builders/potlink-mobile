@@ -14,6 +14,7 @@ import { Screen, SharedHeader } from '@eb-packages/ui';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@eb-packages/logic';
 import { analytics } from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 interface PotsListScreenProps {
   session: Session | null;
@@ -33,11 +34,21 @@ export const PotsListScreen = ({
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
 
+  useScreenLogger('PotsListScreen');
+
   const loadPots = async () => {
     setLoading(true);
-    const userPots = await getUserPots();
-    setPots(userPots);
-    setLoading(false);
+    try {
+      const userPots = await getUserPots();
+      setPots(userPots);
+    } catch (error) {
+      analytics.captureError(error, {
+        screen: 'PotsListScreen',
+        action: 'loadPots',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -47,7 +58,13 @@ export const PotsListScreen = ({
   const renderPotCard = ({ item }: { item: Pot }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => onPotPress(item)}
+      onPress={() => {
+        analytics.track('pot_opened', {
+          pot_id: item.id,
+          species: item.species,
+        });
+        onPotPress(item);
+      }}
       activeOpacity={0.7}
     >
       {item.photo_url ? (
@@ -147,7 +164,10 @@ export const PotsListScreen = ({
         contentContainerStyle={styles.list}
         ListEmptyComponent={renderEmptyState}
         refreshing={loading}
-        onRefresh={loadPots}
+        onRefresh={() => {
+          analytics.track('pots_list_refreshed');
+          loadPots();
+        }}
       />
     </Screen>
   );

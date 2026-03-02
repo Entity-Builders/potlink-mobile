@@ -12,9 +12,11 @@ import {
 import { Screen } from '@eb-packages/ui';
 import { getAllUserCareSchedules, logCare } from '@eb-packages/logic';
 import type { CareSchedule } from '@eb-packages/garden';
-import { analytics } from '../services/analyticsService';
+import { analytics, trackCareLogged } from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 export const CareCalendarScreen = ({ navigation }: any) => {
+  useScreenLogger('CareCalendarScreen');
   const [schedules, setSchedules] = useState<
     (CareSchedule & { pot: { name: string; photo_url?: string } })[]
   >([]);
@@ -61,8 +63,15 @@ export const CareCalendarScreen = ({ navigation }: any) => {
               notes: 'Logged from Calendar',
             });
             if (result) {
+              trackCareLogged(item.pot_id, item.care_type);
               onRefresh();
             } else {
+              analytics.captureError(new Error('logCare returned null'), {
+                screen: 'CareCalendarScreen',
+                action: 'handleLog',
+                potId: item.pot_id,
+                careType: item.care_type,
+              });
               alert('Failed to log care');
             }
           },

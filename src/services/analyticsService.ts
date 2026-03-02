@@ -5,9 +5,9 @@ import { Analytics, PostHogRNProvider } from '@eb-packages/analytics';
  * Import this in screens/components to track events or errors.
  *
  * Usage:
- *   import { analytics } from '../services/analyticsService';
+ *   import { analytics, trackPotCreated } from '../services/analyticsService';
+ *   trackPotCreated(pot.id, pot.species, 'manual');
  *   analytics.captureError(error, { screen: 'AuthScreen' });
- *   analytics.captureNetworkError(url, status, message, { screen: 'PotsListScreen' });
  */
 export const analytics = new Analytics(new PostHogRNProvider());
 
@@ -28,3 +28,44 @@ export function initAnalytics(): void {
       : 'development',
   });
 }
+
+// ─── Typed Event Helpers ────────────────────────────────────────────────────
+// Use these instead of raw analytics.track() to keep event names consistent.
+
+/** Track when a pot is successfully created. */
+export const trackPotCreated = (
+  potId: string,
+  species: string,
+  method: 'manual' | 'ar_camera',
+) => {
+  analytics.track('pot_created', { pot_id: potId, species, method });
+};
+
+/** Track when a pot is deleted. */
+export const trackPotDeleted = (potId: string) => {
+  analytics.track('pot_deleted', { pot_id: potId });
+};
+
+/** Track when a pot is successfully edited/saved. */
+export const trackPotEdited = (potId: string) => {
+  analytics.track('pot_edited', { pot_id: potId });
+};
+
+/** Track when AI plant identification succeeds. */
+export const trackPlantIdentified = (
+  species: string,
+  confidence?: string,
+  method?: 'ar_camera' | 'manual_photo',
+) => {
+  analytics.track('plant_identified', { species, confidence, method });
+};
+
+/** Track when a care action (e.g. watering) is logged. */
+export const trackCareLogged = (potId: string, careType: string) => {
+  analytics.track('care_logged', { pot_id: potId, care_type: careType });
+};
+
+/** Track a screen view manually (prefer the useScreenLogger hook). */
+export const trackScreenView = (name: string) => {
+  analytics.screen(name);
+};

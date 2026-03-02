@@ -16,7 +16,12 @@ import { identifyPlant } from '@eb-packages/logic';
 import { createPot, createDefaultCareSchedules } from '@eb-packages/logic';
 import type { PotFormData } from '@eb-packages/garden';
 import { ARGlassOverlay } from '../components/ARGlassOverlay';
-import { analytics } from '../services/analyticsService';
+import {
+  analytics,
+  trackPotCreated,
+  trackPlantIdentified,
+} from '../services/analyticsService';
+import { useScreenLogger } from '../hooks/useScreenLogger';
 
 interface CareInfo {
   climate?: string;
@@ -42,6 +47,7 @@ export const ARPotRegistrationScreen = ({
   onSuccess?: () => void;
   onCancel?: () => void;
 }) => {
+  useScreenLogger('ARPotRegistrationScreen');
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const insets = useSafeAreaInsets();
@@ -105,6 +111,7 @@ export const ARPotRegistrationScreen = ({
           if (result.care_info) {
             setCareInfo(result.care_info);
           }
+          trackPlantIdentified(result.species, result.confidence, 'ar_camera');
         } else {
           Alert.alert(
             'No Identificada',
@@ -145,6 +152,7 @@ export const ARPotRegistrationScreen = ({
       const result = await createPot(potData);
       if (result) {
         await createDefaultCareSchedules(result.id, careInfo || undefined);
+        trackPotCreated(result.id, identifiedData.species, 'ar_camera');
         Alert.alert('¡Listo!', 'Maceta registrada 🌱', [
           { text: 'OK', onPress: onSuccess },
         ]);
@@ -164,6 +172,7 @@ export const ARPotRegistrationScreen = ({
   };
 
   const handleRetake = () => {
+    analytics.track('ar_scan_retake');
     setIdentifiedData(null);
     setCapturedPhotoUri(null);
     setCareInfo(null);
