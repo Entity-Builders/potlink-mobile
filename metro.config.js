@@ -1,10 +1,12 @@
-const { getDefaultConfig } = require('expo/metro-config');
+const { getPostHogExpoConfig } = require('posthog-react-native/metro');
 const path = require('path');
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 
-const config = getDefaultConfig(projectRoot);
+// getPostHogExpoConfig wraps getDefaultConfig and injects PostHog's
+// debug ID into bundles — required for source map upload to work.
+const config = getPostHogExpoConfig(projectRoot);
 
 // Extend (don't replace) Expo's default watchFolders to include monorepo root
 // This lets Metro hot-reload on shared package changes without breaking Expo defaults

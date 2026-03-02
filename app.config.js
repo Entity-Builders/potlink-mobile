@@ -77,6 +77,7 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     plugins: [
+      'posthog-react-native/expo',
       [
         'expo-speech-recognition',
         {
