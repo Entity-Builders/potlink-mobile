@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { supabase } from '@eb-packages/logic';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PostHogProvider, PostHogErrorBoundary } from 'posthog-react-native';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PotsListScreen } from './src/screens/PotsListScreen';
 import { ARPotRegistrationScreen } from './src/screens/ARPotRegistrationScreen';
@@ -10,8 +11,11 @@ import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
 import type { Pot } from '@eb-packages/garden';
 import { NotificationService } from './src/services/NotificationService';
-import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { analytics, initAnalytics } from './src/services/analyticsService';
+import {
+  analytics,
+  initAnalytics,
+  getPostHogClient,
+} from './src/services/analyticsService';
 
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
 import { CareCalendarScreen } from './src/screens/CareCalendarScreen';
@@ -31,6 +35,27 @@ interface NavigationState {
   screen: Screen;
   pot?: Pot;
 }
+
+// ── Error Boundary Fallback UI ──────────────────────────────────────────────
+const ErrorFallback = ({
+  error,
+}: {
+  error: Error | unknown;
+  componentStack?: string;
+}) => (
+  <View style={styles.errorContainer}>
+    <Text style={styles.errorEmoji}>🌿</Text>
+    <Text style={styles.errorTitle}>Algo salió mal</Text>
+    <Text style={styles.errorMessage}>
+      El error fue registrado. Reiniciá la app para continuar.
+    </Text>
+    {__DEV__ && (
+      <Text style={styles.errorDev}>
+        {error instanceof Error ? error.message : String(error)}
+      </Text>
+    )}
+  </View>
+);
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -74,20 +99,21 @@ export default function App() {
         if (token) console.log('Push token:', token);
       })
       .catch((err) => {
-        analytics.captureError(err, { screen: 'App', action: 'registerPushNotifications' });
+        analytics.captureError(err, {
+          screen: 'App',
+          action: 'registerPushNotifications',
+        });
       });
   }, []);
 
   if (!session) {
     return (
-      <ErrorBoundary>
-        <View style={styles.container}>
-          <AuthScreen
-            onNavigateToList={() => setNavigation({ screen: 'list' })}
-          />
-          <StatusBar style='auto' />
-        </View>
-      </ErrorBoundary>
+      <View style={styles.container}>
+        <AuthScreen
+          onNavigateToList={() => setNavigation({ screen: 'list' })}
+        />
+        <StatusBar style='auto' />
+      </View>
     );
   }
 
@@ -159,14 +185,16 @@ export default function App() {
   };
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <View style={styles.container}>
-          {renderScreen()}
-          <StatusBar style='auto' />
-        </View>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <PostHogProvider client={getPostHogClient()}>
+      <PostHogErrorBoundary fallback={ErrorFallback}>
+        <SafeAreaProvider>
+          <View style={styles.container}>
+            {renderScreen()}
+            <StatusBar style='auto' />
+          </View>
+        </SafeAreaProvider>
+      </PostHogErrorBoundary>
+    </PostHogProvider>
   );
 }
 
@@ -174,5 +202,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    backgroundColor: '#f5f5f5',
+  },
+  errorEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  errorDev: {
+    fontSize: 11,
+    color: '#c00',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    padding: 8,
+    backgroundColor: '#fff0f0',
+    borderRadius: 4,
   },
 });

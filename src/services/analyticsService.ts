@@ -9,7 +9,11 @@ import { Analytics, PostHogRNProvider } from '@eb-packages/analytics';
  *   trackPotCreated(pot.id, pot.species, 'manual');
  *   analytics.captureError(error, { screen: 'AuthScreen' });
  */
-export const analytics = new Analytics(new PostHogRNProvider());
+export const posthogRNProvider = new PostHogRNProvider();
+export const analytics = new Analytics(posthogRNProvider);
+
+/** Returns the raw PostHog client — used by PostHogProvider in App.tsx */
+export const getPostHogClient = () => posthogRNProvider.getClient();
 
 export function initAnalytics(): void {
   analytics.init({
