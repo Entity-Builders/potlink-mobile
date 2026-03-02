@@ -83,24 +83,37 @@ Or export them before running:
     },
   );
 
-  // Step 2: Export bundle + source maps
-  console.log('\n📦 Exporting bundle with source maps...');
+  // Step 2: Export bundle + source maps (native only — web uses standard JS, not Hermes)
+  console.log('\n📦 Exporting native bundles with source maps...');
   if (fs.existsSync(DIST_DIR)) {
     fs.rmSync(DIST_DIR, { recursive: true });
   }
-  run(`npx expo export --dump-sourcemap --output-dir dist`, { cwd: appDir });
-
-  // Step 3: Upload source maps to PostHog
-  console.log('\n🗺️  Uploading source maps to PostHog...');
-  run(`npx @posthog/cli exp hermes upload --directory dist`, {
-    cwd: appDir,
-    env: {
-      ...process.env,
-      POSTHOG_CLI_HOST: POSTHOG_HOST,
-      POSTHOG_CLI_PROJECT_ID,
-      POSTHOG_CLI_API_KEY,
+  run(
+    `npx expo export --platform ios --platform android --dump-sourcemap --output-dir dist`,
+    {
+      cwd: appDir,
     },
-  });
+  );
+
+  // Step 3: Upload source maps to PostHog (iOS and Android separately)
+  console.log('\n🗺️  Uploading source maps to PostHog...');
+  const uploadEnv = {
+    ...process.env,
+    POSTHOG_CLI_HOST: POSTHOG_HOST,
+    POSTHOG_CLI_PROJECT_ID,
+    POSTHOG_CLI_API_KEY,
+  };
+  const nativeDirs = ['ios', 'android'].map(
+    (p) => `${DIST_DIR}/_expo/static/js/${p}`,
+  );
+  for (const dir of nativeDirs) {
+    if (fs.existsSync(dir)) {
+      run(`npx @posthog/cli exp hermes upload --directory "${dir}"`, {
+        cwd: appDir,
+        env: uploadEnv,
+      });
+    }
+  }
 
   console.log(`
 ✅  OTA deployed to production!
