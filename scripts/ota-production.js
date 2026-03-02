@@ -92,7 +92,7 @@ Or export them before running:
 
   // Step 3: Upload source maps to PostHog
   console.log('\n🗺️  Uploading source maps to PostHog...');
-  run(`posthog-cli exp hermes upload --directory dist`, {
+  run(`npx @posthog/cli exp hermes upload --directory dist`, {
     cwd: appDir,
     env: {
       ...process.env,
