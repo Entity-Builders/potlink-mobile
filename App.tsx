@@ -1,3 +1,4 @@
+import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { supabase } from '@eb-packages/logic';
@@ -91,6 +92,24 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Check for OTA updates on launch (production only)
+    if (!__DEV__) {
+      Updates.checkForUpdateAsync()
+        .then(({ isAvailable }) => {
+          if (isAvailable) {
+            Updates.fetchUpdateAsync().then(() => Updates.reloadAsync());
+          }
+        })
+        .catch((err) =>
+          analytics.captureError(err, {
+            screen: 'App',
+            action: 'checkForUpdate',
+          }),
+        );
+    }
   }, []);
 
   useEffect(() => {
