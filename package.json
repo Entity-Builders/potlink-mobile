@@ -10,7 +10,8 @@
     "eas:config": "node scripts/generate-eas-config.js",
     "build:ios": "node scripts/generate-eas-config.js && npx eas build --profile development-simulator --platform ios",
     "build:ios:device": "node scripts/generate-eas-config.js && npx eas build --profile development --platform ios",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "ota:production": "node scripts/ota-production.js"
   },
   "dependencies": {
     "@eb-packages/analytics": "*",
