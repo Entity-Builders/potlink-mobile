@@ -26,7 +26,7 @@ module.exports = {
   expo: {
     name,
     slug: 'potlink-mobile',
-    version: '1.0.7',
+    version: '1.0.8',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
