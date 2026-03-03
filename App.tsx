@@ -4,17 +4,12 @@ import { StyleSheet, View, Text } from 'react-native';
 import { supabase } from '@eb-packages/logic';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { PostHogProvider, PostHogErrorBoundary } from 'posthog-react-native';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
 import type { Pot } from '@eb-packages/garden';
 import { NotificationService } from './src/services/NotificationService';
-import {
-  analytics,
-  initAnalytics,
-  getPostHogClient,
-} from './src/services/analyticsService';
+import { analytics, initAnalytics } from './src/services/analyticsService';
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import type { HomeNavAction } from './src/navigation/AppNavigator';
@@ -173,24 +168,20 @@ export default function App() {
   }
 
   return (
-    <PostHogProvider client={getPostHogClient()}>
-      <PostHogErrorBoundary fallback={ErrorFallback}>
-        <SafeAreaProvider>
-          <View style={styles.container}>
-            {modal.screen !== 'none' ? (
-              renderModal()
-            ) : (
-              <AppNavigator
-                session={session}
-                onLogout={() => setSession(null)}
-                onNavigateTo={handleNavAction}
-              />
-            )}
-            <StatusBar style='light' />
-          </View>
-        </SafeAreaProvider>
-      </PostHogErrorBoundary>
-    </PostHogProvider>
+    <SafeAreaProvider>
+      <View style={styles.container}>
+        {modal.screen !== 'none' ? (
+          renderModal()
+        ) : (
+          <AppNavigator
+            session={session}
+            onLogout={() => setSession(null)}
+            onNavigateTo={handleNavAction}
+          />
+        )}
+        <StatusBar style='light' />
+      </View>
+    </SafeAreaProvider>
   );
 }
 

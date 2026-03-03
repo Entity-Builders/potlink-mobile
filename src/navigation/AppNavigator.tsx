@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,6 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import type { Session } from '@supabase/supabase-js';
 import type { Pot } from '@eb-packages/garden';
 
@@ -17,68 +15,53 @@ import { CareCalendarScreen } from '../screens/CareCalendarScreen';
 import { ARPotRegistrationScreen } from '../screens/ARPotRegistrationScreen';
 import { analytics } from '../services/analyticsService';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-export type RootTabParamList = {
-  Home: undefined;
-  Calendar: undefined;
-  Add: undefined;
-  Plants: undefined;
-};
-
-// ── Sub-navigation types for stack-like navigation within tabs ───────────────
+type TabId = 'home' | 'calendar' | 'add' | 'plants';
 
 export type HomeNavAction =
   | { type: 'OPEN_DETAIL'; pot: Pot }
   | { type: 'OPEN_EDIT'; pot: Pot }
   | { type: 'OPEN_CARE_SETTINGS'; pot: Pot };
 
-// ── Custom Tab Bar ────────────────────────────────────────────────────────────
+interface TabConfig {
+  id: TabId;
+  label: string;
+  icon: string;
+  isFab?: boolean;
+}
 
-function CustomTabBar({
-  state,
-  descriptors,
-  navigation,
+const TABS: TabConfig[] = [
+  { id: 'home', label: 'Inicio', icon: '🏠' },
+  { id: 'calendar', label: 'Calendario', icon: '📅' },
+  { id: 'add', label: 'Agregar', icon: '➕', isFab: true },
+  { id: 'plants', label: 'Mis plantas', icon: '🌱' },
+];
+
+// ── Tab Bar ───────────────────────────────────────────────────────────────────
+
+function TabBar({
+  activeTab,
+  onTabPress,
 }: {
-  state: any;
-  descriptors: any;
-  navigation: any;
+  activeTab: TabId;
+  onTabPress: (id: TabId) => void;
 }) {
-  const tabs = [
-    { key: 'Home', label: 'Inicio', icon: '🏠' },
-    { key: 'Calendar', label: 'Calendario', icon: '📅' },
-    { key: 'Add', label: 'Agregar', icon: '➕', isFab: true },
-    { key: 'Plants', label: 'Mis plantas', icon: '🌱' },
-  ];
-
   return (
     <View style={styles.tabBarContainer}>
       <View style={styles.tabBar}>
-        {tabs.map((tab, index) => {
-          const route = state.routes.find((r: any) => r.name === tab.key);
-          const isFocused = route
-            ? state.index === state.routes.indexOf(route)
-            : false;
-
-          const onPress = () => {
-            if (!route) return;
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              analytics.track('tab_pressed', { tab: tab.key });
-              navigation.navigate(route.name);
-            }
-          };
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
 
           if (tab.isFab) {
             return (
               <TouchableOpacity
-                key={tab.key}
+                key={tab.id}
                 style={styles.fabButton}
-                onPress={onPress}
+                onPress={() => {
+                  analytics.track('tab_pressed', { tab: tab.id });
+                  onTabPress(tab.id);
+                }}
                 activeOpacity={0.85}
               >
                 <Text style={styles.fabIcon}>{tab.icon}</Text>
@@ -88,16 +71,19 @@ function CustomTabBar({
 
           return (
             <TouchableOpacity
-              key={tab.key}
+              key={tab.id}
               style={styles.tabItem}
-              onPress={onPress}
+              onPress={() => {
+                analytics.track('tab_pressed', { tab: tab.id });
+                onTabPress(tab.id);
+              }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.tabIcon, isFocused && styles.tabIconActive]}>
+              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
                 {tab.icon}
               </Text>
               <Text
-                style={[styles.tabLabel, isFocused && styles.tabLabelActive]}
+                style={[styles.tabLabel, isActive && styles.tabLabelActive]}
               >
                 {tab.label}
               </Text>
@@ -111,8 +97,6 @@ function CustomTabBar({
 
 // ── Navigator ─────────────────────────────────────────────────────────────────
 
-const Tab = createBottomTabNavigator<RootTabParamList>();
-
 interface AppNavigatorProps {
   session: Session;
   onLogout: () => void;
@@ -124,48 +108,56 @@ export function AppNavigator({
   onLogout,
   onNavigateTo,
 }: AppNavigatorProps) {
+  const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  const renderScreen = () => {
+    switch (activeTab) {
+      case 'home':
+        return (
+          <PotsListScreen
+            session={session}
+            onPotPress={(pot) => onNavigateTo({ type: 'OPEN_DETAIL', pot })}
+            onLogout={onLogout}
+          />
+        );
+      case 'calendar':
+        return <CareCalendarScreen />;
+      case 'add':
+        return (
+          <ARPotRegistrationScreen
+            onSuccess={() => setActiveTab('home')}
+            onCancel={() => setActiveTab('home')}
+          />
+        );
+      case 'plants':
+        return (
+          <PotsListScreen
+            session={session}
+            onPotPress={(pot) => onNavigateTo({ type: 'OPEN_DETAIL', pot })}
+            onLogout={onLogout}
+            collectionMode
+          />
+        );
+    }
+  };
+
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        tabBar={(props) => <CustomTabBar {...props} />}
-        screenOptions={{ headerShown: false }}
-      >
-        <Tab.Screen name='Home'>
-          {() => (
-            <PotsListScreen
-              session={session}
-              onPotPress={(pot) => onNavigateTo({ type: 'OPEN_DETAIL', pot })}
-              onLogout={onLogout}
-            />
-          )}
-        </Tab.Screen>
-
-        <Tab.Screen name='Calendar' component={CareCalendarScreen} />
-
-        <Tab.Screen name='Add'>
-          {() => (
-            <ARPotRegistrationScreen onSuccess={() => {}} onCancel={() => {}} />
-          )}
-        </Tab.Screen>
-
-        <Tab.Screen name='Plants'>
-          {() => (
-            <PotsListScreen
-              session={session}
-              onPotPress={(pot) => onNavigateTo({ type: 'OPEN_DETAIL', pot })}
-              onLogout={onLogout}
-              collectionMode
-            />
-          )}
-        </Tab.Screen>
-      </Tab.Navigator>
-    </NavigationContainer>
+    <View style={styles.container}>
+      <View style={styles.screenContainer}>{renderScreen()}</View>
+      <TabBar activeTab={activeTab} onTabPress={setActiveTab} />
+    </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  screenContainer: {
+    flex: 1,
+  },
   tabBarContainer: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 28 : 16,
@@ -195,7 +187,7 @@ const styles = StyleSheet.create({
   },
   tabIcon: {
     fontSize: 20,
-    opacity: 0.45,
+    opacity: 0.4,
   },
   tabIconActive: {
     opacity: 1,

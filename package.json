@@ -17,8 +17,6 @@
     "@eb-packages/analytics": "*",
     "@eb-packages/garden": "*",
     "@eb-packages/ui": "*",
-    "@react-navigation/bottom-tabs": "^7.15.4",
-    "@react-navigation/native": "^7.1.32",
     "expo": "~54.0.33",
     "expo-camera": "~17.0.10",
     "expo-dev-client": "~6.0.20",
@@ -35,7 +33,6 @@
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-safe-area-context": "^5.6.2",
-    "react-native-screens": "^4.24.0",
     "react-native-svg": "^15.15.3"
   },
   "devDependencies": {
