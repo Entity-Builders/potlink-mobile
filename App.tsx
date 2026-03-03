@@ -1,13 +1,11 @@
 import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { supabase } from '@eb-packages/logic';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PostHogProvider, PostHogErrorBoundary } from 'posthog-react-native';
 import { AuthScreen } from './src/screens/AuthScreen';
-import { PotsListScreen } from './src/screens/PotsListScreen';
-import { ARPotRegistrationScreen } from './src/screens/ARPotRegistrationScreen';
 import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
 import type { Pot } from '@eb-packages/garden';
@@ -17,27 +15,19 @@ import {
   initAnalytics,
   getPostHogClient,
 } from './src/services/analyticsService';
-
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
-import { CareCalendarScreen } from './src/screens/CareCalendarScreen';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import type { HomeNavAction } from './src/navigation/AppNavigator';
 
-// Initialize analytics as early as possible
 initAnalytics();
 
-type Screen =
-  | 'list'
-  | 'register'
-  | 'detail'
-  | 'edit'
-  | 'care-settings'
-  | 'calendar';
-
-interface NavigationState {
-  screen: Screen;
+type ModalScreen = 'none' | 'detail' | 'edit' | 'care-settings';
+interface ModalState {
+  screen: ModalScreen;
   pot?: Pot;
 }
 
-// ── Error Boundary Fallback UI ──────────────────────────────────────────────
+// ── Error Boundary Fallback ──────────────────────────────────────────────────
 const ErrorFallback = ({
   error,
 }: {
@@ -58,17 +48,17 @@ const ErrorFallback = ({
   </View>
 );
 
+// ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState<any>(null);
-  const [navigation, setNavigation] = useState<NavigationState>({
-    screen: 'list',
-  });
+  const [modal, setModal] = useState<ModalState>({ screen: 'none' });
 
+  // Auth state
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         analytics.captureError(error, { screen: 'App', action: 'getSession' });
-        if (error.message && error.message.includes('Invalid Refresh Token')) {
+        if (error.message?.includes('Invalid Refresh Token')) {
           supabase.auth.signOut();
           setSession(null);
           return;
@@ -81,9 +71,7 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setNavigation({ screen: 'list' });
-
-      // Identify user in PostHog on login, reset on logout
+      setModal({ screen: 'none' });
       if (session?.user?.id) {
         analytics.identify(session.user.id, { email: session.user.email });
       } else {
@@ -94,8 +82,8 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // OTA updates
   useEffect(() => {
-    // Check for OTA updates on launch (production only)
     if (!__DEV__) {
       Updates.checkForUpdateAsync()
         .then(({ isAvailable }) => {
@@ -112,104 +100,93 @@ export default function App() {
     }
   }, []);
 
+  // Push notifications
   useEffect(() => {
     NotificationService.registerForPushNotificationsAsync()
       .then((token) => {
         if (token) console.log('Push token:', token);
       })
-      .catch((err) => {
+      .catch((err) =>
         analytics.captureError(err, {
           screen: 'App',
           action: 'registerPushNotifications',
-        });
-      });
+        }),
+      );
   }, []);
 
-  if (!session) {
-    return (
-      <View style={styles.container}>
-        <AuthScreen
-          onNavigateToList={() => setNavigation({ screen: 'list' })}
-        />
-        <StatusBar style='auto' />
-      </View>
-    );
-  }
+  // Navigate to detail/edit/care-settings from within navigator
+  const handleNavAction = (action: HomeNavAction) => {
+    if (action.type === 'OPEN_DETAIL')
+      setModal({ screen: 'detail', pot: action.pot });
+    if (action.type === 'OPEN_EDIT')
+      setModal({ screen: 'edit', pot: action.pot });
+    if (action.type === 'OPEN_CARE_SETTINGS')
+      setModal({ screen: 'care-settings', pot: action.pot });
+  };
 
-  const renderScreen = () => {
-    switch (navigation.screen) {
-      case 'list':
-        return (
-          <PotsListScreen
-            session={session}
-            onAddPot={() => setNavigation({ screen: 'register' })}
-            onPotPress={(pot) => setNavigation({ screen: 'detail', pot })}
-            onOpenCalendar={() => setNavigation({ screen: 'calendar' })}
-            onLogout={() => setSession(null)}
-          />
-        );
-
-      case 'register':
-        return (
-          <ARPotRegistrationScreen
-            onSuccess={() => setNavigation({ screen: 'list' })}
-            onCancel={() => setNavigation({ screen: 'list' })}
-          />
-        );
-
+  const renderModal = () => {
+    switch (modal.screen) {
       case 'detail':
-        return navigation.pot ? (
+        return modal.pot ? (
           <PotDetailScreen
-            pot={navigation.pot}
-            onBack={() => setNavigation({ screen: 'list' })}
-            onEdit={() =>
-              setNavigation({ screen: 'edit', pot: navigation.pot })
-            }
-            onDeleted={() => setNavigation({ screen: 'list' })}
+            pot={modal.pot}
+            onBack={() => setModal({ screen: 'none' })}
+            onEdit={() => setModal({ screen: 'edit', pot: modal.pot })}
+            onDeleted={() => setModal({ screen: 'none' })}
             onCareSettings={() =>
-              setNavigation({ screen: 'care-settings', pot: navigation.pot })
+              setModal({ screen: 'care-settings', pot: modal.pot })
             }
           />
         ) : null;
 
       case 'edit':
-        return navigation.pot ? (
+        return modal.pot ? (
           <PotEditScreen
-            pot={navigation.pot}
-            onBack={() =>
-              setNavigation({ screen: 'detail', pot: navigation.pot })
-            }
+            pot={modal.pot}
+            onBack={() => setModal({ screen: 'detail', pot: modal.pot })}
             onSaved={(updatedPot) =>
-              setNavigation({ screen: 'detail', pot: updatedPot })
+              setModal({ screen: 'detail', pot: updatedPot })
             }
           />
         ) : null;
 
       case 'care-settings':
-        return navigation.pot ? (
+        return modal.pot ? (
           <CareSettingsScreen
-            pot={navigation.pot}
-            onBack={() =>
-              setNavigation({ screen: 'detail', pot: navigation.pot })
-            }
+            pot={modal.pot}
+            onBack={() => setModal({ screen: 'detail', pot: modal.pot })}
           />
         ) : null;
-
-      case 'calendar':
-        return <CareCalendarScreen />;
 
       default:
         return null;
     }
   };
 
+  if (!session) {
+    return (
+      <View style={styles.container}>
+        <AuthScreen onNavigateToList={() => {}} />
+        <StatusBar style='light' />
+      </View>
+    );
+  }
+
   return (
     <PostHogProvider client={getPostHogClient()}>
       <PostHogErrorBoundary fallback={ErrorFallback}>
         <SafeAreaProvider>
           <View style={styles.container}>
-            {renderScreen()}
-            <StatusBar style='auto' />
+            {modal.screen !== 'none' ? (
+              renderModal()
+            ) : (
+              <AppNavigator
+                session={session}
+                onLogout={() => setSession(null)}
+                onNavigateTo={handleNavAction}
+              />
+            )}
+            <StatusBar style='light' />
           </View>
         </SafeAreaProvider>
       </PostHogErrorBoundary>
@@ -220,38 +197,35 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1B4332',
   },
   errorContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1B4332',
   },
-  errorEmoji: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
+  errorEmoji: { fontSize: 48, marginBottom: 16 },
   errorTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   errorMessage: {
     fontSize: 15,
-    color: '#666',
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     marginBottom: 24,
   },
   errorDev: {
     fontSize: 11,
-    color: '#c00',
+    color: '#ffb3b3',
     fontFamily: 'monospace',
     textAlign: 'center',
     padding: 8,
-    backgroundColor: '#fff0f0',
+    backgroundColor: 'rgba(255,0,0,0.1)',
     borderRadius: 4,
   },
 });
