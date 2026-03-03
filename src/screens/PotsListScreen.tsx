@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  Image,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -23,6 +22,19 @@ interface PotsListScreenProps {
   onOpenCalendar: () => void;
   onLogout: () => void;
 }
+
+const STATE_CONFIG = {
+  seeds: { emoji: '🌱', label: 'Semillas' },
+  seedling: { emoji: '🌿', label: 'Brote' },
+  young: { emoji: '🪴', label: 'Joven' },
+  mature: { emoji: '🌳', label: 'Madura' },
+} as const;
+
+const getDaysSinceRegistration = (registeredAt: Date): number => {
+  const now = new Date();
+  const reg = new Date(registeredAt);
+  return Math.floor((now.getTime() - reg.getTime()) / (1000 * 60 * 60 * 24));
+};
 
 export const PotsListScreen = ({
   session,
@@ -55,50 +67,91 @@ export const PotsListScreen = ({
     loadPots();
   }, []);
 
-  const renderPotCard = ({ item }: { item: Pot }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => {
-        analytics.track('pot_opened', {
-          pot_id: item.id,
-          species: item.species,
-        });
-        onPotPress(item);
-      }}
-      activeOpacity={0.7}
-    >
-      {item.photo_url ? (
-        <Image source={{ uri: item.photo_url }} style={styles.cardImage} />
-      ) : (
-        <View style={styles.cardImagePlaceholder}>
-          <Text style={styles.cardImagePlaceholderText}>🌱</Text>
+  const renderPotRow = ({ item }: { item: Pot }) => {
+    const stateInfo = STATE_CONFIG[item.initial_state] || {
+      emoji: '🌱',
+      label: item.initial_state,
+    };
+    const days = getDaysSinceRegistration(item.registered_at);
+
+    return (
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => {
+          analytics.track('pot_opened', {
+            pot_id: item.id,
+            species: item.species,
+          });
+          onPotPress(item);
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={styles.rowIcon}>
+          <Text style={styles.rowIconText}>{stateInfo.emoji}</Text>
         </View>
-      )}
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.cardSpecies}>{item.species}</Text>
-        <View style={styles.cardMeta}>
-          <Text style={styles.cardMetaText}>
-            {item.initial_state === 'seeds' && '🌱 Seeds'}
-            {item.initial_state === 'seedling' && '🌿 Seedling'}
-            {item.initial_state === 'young' && '🪴 Young'}
-            {item.initial_state === 'mature' && '🌳 Mature'}
+
+        <View style={styles.rowContent}>
+          <View style={styles.rowTopLine}>
+            <Text style={styles.rowName} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.rowDays}>{days}d</Text>
+          </View>
+
+          <Text style={styles.rowSpecies} numberOfLines={1}>
+            {item.species}
+            {item.variety ? ` · ${item.variety}` : ''}
           </Text>
-          <Text style={styles.cardMetaText}>💧 {item.moisture_threshold}%</Text>
+
+          <View style={styles.rowTags}>
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{stateInfo.label}</Text>
+            </View>
+            <View
+              style={[
+                styles.tag,
+                item.location_type === 'indoor'
+                  ? styles.tagIndoor
+                  : styles.tagOutdoor,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tagText,
+                  item.location_type === 'indoor'
+                    ? styles.tagIndoorText
+                    : styles.tagOutdoorText,
+                ]}
+              >
+                {item.location_type === 'indoor'
+                  ? '🏠 Interior'
+                  : '☀️ Exterior'}
+              </Text>
+            </View>
+            <View style={[styles.tag, styles.tagWater]}>
+              <Text style={[styles.tagText, styles.tagWaterText]}>
+                💧 {item.moisture_threshold}%
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+
+        <Text style={styles.rowChevron}>›</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyStateIcon}>🪴</Text>
-      <Text style={styles.emptyStateTitle}>No pots yet</Text>
+      <Text style={styles.emptyStateTitle}>No tenés plantas aún</Text>
       <Text style={styles.emptyStateText}>
-        Start your garden by registering your first pot!
+        ¡Empezá tu jardín registrando tu primera maceta!
       </Text>
       <TouchableOpacity style={styles.emptyStateButton} onPress={onAddPot}>
-        <Text style={styles.emptyStateButtonText}>Register First Pot</Text>
+        <Text style={styles.emptyStateButtonText}>
+          Registrar primera maceta
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -107,7 +160,7 @@ export const PotsListScreen = ({
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size='large' color='#2e7d32' />
-        <Text style={styles.loadingText}>Loading your garden...</Text>
+        <Text style={styles.loadingText}>Cargando tu jardín...</Text>
       </View>
     );
   }
@@ -116,14 +169,9 @@ export const PotsListScreen = ({
     <Screen style={styles.container}>
       <SharedHeader
         session={session}
-        onLogin={() => {
-          // This shouldn't be called since we only show this screen when authenticated
-          // but we need to provide a callback
-        }}
+        onLogin={() => {}}
         onLogout={async () => {
           try {
-            // Use local scope to clear session without server roundtrip
-            // Global signOut fails on this Supabase instance
             await supabase.auth.signOut({ scope: 'local' });
           } catch (e) {
             console.error('Logout exception:', e);
@@ -152,14 +200,14 @@ export const PotsListScreen = ({
             style={styles.addButton}
             onPress={onAddPot}
           >
-            <Text style={styles.addButtonText}>+ Add Pot</Text>
+            <Text style={styles.addButtonText}>+ Agregar</Text>
           </TouchableOpacity>,
         ]}
       />
 
       <FlatList
         data={pots}
-        renderItem={renderPotCard}
+        renderItem={renderPotRow}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={renderEmptyState}
@@ -168,6 +216,7 @@ export const PotsListScreen = ({
           analytics.track('pots_list_refreshed');
           loadPots();
         }}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
     </Screen>
   );
@@ -212,56 +261,100 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   list: {
-    padding: 16,
+    padding: 12,
   },
-  card: {
+  separator: {
+    height: 1,
+    backgroundColor: '#e8e8e8',
+    marginHorizontal: 4,
+  },
+  // Row layout
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 12,
   },
-  cardImage: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#e0e0e0',
-  },
-  cardImagePlaceholder: {
-    width: '100%',
-    height: 200,
+  rowIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#e8f5e9',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardImagePlaceholderText: {
-    fontSize: 64,
+  rowIconText: {
+    fontSize: 22,
   },
-  cardContent: {
-    padding: 16,
+  rowContent: {
+    flex: 1,
+    gap: 3,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  cardSpecies: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  cardMeta: {
+  rowTopLine: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  cardMetaText: {
+  rowName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1b5e20',
+    flex: 1,
+  },
+  rowDays: {
     fontSize: 12,
-    color: '#999',
+    color: '#9e9e9e',
+    fontWeight: '500',
+    marginLeft: 8,
   },
+  rowSpecies: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  rowTags: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  tag: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  tagText: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: '500',
+  },
+  tagIndoor: {
+    backgroundColor: '#fff3e0',
+  },
+  tagIndoorText: {
+    color: '#e65100',
+  },
+  tagOutdoor: {
+    backgroundColor: '#e8f5e9',
+  },
+  tagOutdoorText: {
+    color: '#2e7d32',
+  },
+  tagWater: {
+    backgroundColor: '#e3f2fd',
+  },
+  tagWaterText: {
+    color: '#1565c0',
+  },
+  rowChevron: {
+    fontSize: 20,
+    color: '#ccc',
+    fontWeight: '300',
+  },
+  // Empty state
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
