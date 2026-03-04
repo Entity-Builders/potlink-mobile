@@ -1,120 +1,83 @@
-const APP_ENV = process.env.APP_ENV ?? 'development';
+const { createAppConfig } = require('@eb-packages/expo-config');
 
-const envConfig = {
-  development: {
-    name: 'potlink-dev',
-    bundleIdentifier: 'com.jobrach.potlinkmobile.dev',
-    androidPackage: 'com.jobrach.potlinkmobile.dev',
-  },
-  preview: {
-    name: 'potlink-preview',
-    bundleIdentifier: 'com.jobrach.potlinkmobile.preview',
-    androidPackage: 'com.jobrach.potlinkmobile.preview',
-  },
-  production: {
-    name: 'potlink',
-    bundleIdentifier: 'com.jobrach.potlinkmobile',
-    androidPackage: 'com.jobrach.potlinkmobile',
-  },
-};
+module.exports = createAppConfig({
+  name: 'potlink',
+  slug: 'potlink-mobile',
+  version: '1.0.8',
+  projectId: '537ea184-1aa0-4198-9873-80eb9b3f6bb5',
 
-const { name, bundleIdentifier, androidPackage } =
-  envConfig[APP_ENV] ?? envConfig.development;
+  // Legacy bundle IDs — kept to avoid App Store Connect mismatch
+  bundleIdentifier: {
+    ios: 'com.jobrach.potlinkmobile',
+    android: 'com.jobrach.potlinkmobile',
+  },
 
-/** @type {import('expo/config').ExpoConfig} */
-module.exports = {
-  expo: {
-    name,
-    slug: 'potlink-mobile',
-    version: '1.0.8',
-    orientation: 'portrait',
-    icon: './assets/icon.png',
-    userInterfaceStyle: 'light',
-    newArchEnabled: true,
-    // Runtime version = app version string (e.g., "1.0.4").
-    // We use 'appVersion' policy (not 'fingerprint') because this is a managed
-    // Expo workflow project — no native ios/android folders are committed.
-    // The fingerprint policy generates different hashes locally vs EAS (EAS
-    // generates ios/ dir at build time which we don't have locally).
-    runtimeVersion: {
-      policy: 'appVersion',
+  icon: './assets/icon.png',
+  splash: {
+    image: './assets/splash-icon.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
+  },
+
+  ios: {
+    buildNumber: '3',
+    infoPlist: {
+      NSSpeechRecognitionUsageDescription:
+        'Allow PotLink to use speech recognition to transcribe your voice input.',
+      NSMicrophoneUsageDescription:
+        'Allow PotLink to access your microphone for voice input functionality.',
     },
-    updates: {
-      url: 'https://u.expo.dev/537ea184-1aa0-4198-9873-80eb9b3f6bb5',
-    },
-    splash: {
-      image: './assets/splash-icon.png',
-      resizeMode: 'contain',
+  },
+
+  android: {
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#ffffff',
     },
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier,
-      buildNumber: '3',
-      infoPlist: {
-        NSSpeechRecognitionUsageDescription:
-          'Allow PotLink to use speech recognition to transcribe your voice input.',
-        NSMicrophoneUsageDescription:
-          'Allow PotLink to access your microphone for voice input functionality.',
-        ITSAppUsesNonExemptEncryption: false,
-      },
-    },
-    android: {
-      adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
-      },
-      edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
-      package: androidPackage,
-      permissions: [
-        'android.permission.RECORD_AUDIO',
-        'android.permission.ACCESS_COARSE_LOCATION',
-        'android.permission.ACCESS_FINE_LOCATION',
-      ],
-    },
-    web: {
-      favicon: './assets/favicon.png',
-    },
-    plugins: [
-      [
-        'expo-speech-recognition',
-        {
-          microphonePermission:
-            'Allow PotLink to access your microphone for voice input functionality.',
-          speechRecognitionPermission:
-            'Allow PotLink to use speech recognition to transcribe your voice input.',
-        },
-      ],
-      [
-        'expo-image-picker',
-        {
-          photosPermission:
-            'Allow PotLink to access your photos to add images to your pots.',
-          cameraPermission:
-            'Allow PotLink to access your camera to take photos of your pots.',
-        },
-      ],
-      [
-        'expo-location',
-        {
-          locationAlwaysAndWhenInUsePermission:
-            'Allow PotLink to use your location to record where your pots are located and fetch local weather data.',
-        },
-      ],
-      [
-        'expo-camera',
-        {
-          cameraPermission:
-            'Allow PotLink to access your camera to scan your plants.',
-        },
-      ],
+    predictiveBackGestureEnabled: false,
+    permissions: [
+      'android.permission.RECORD_AUDIO',
+      'android.permission.ACCESS_COARSE_LOCATION',
+      'android.permission.ACCESS_FINE_LOCATION',
     ],
-    extra: {
-      eas: {
-        projectId: '537ea184-1aa0-4198-9873-80eb9b3f6bb5',
-      },
-    },
-    owner: 'juanobrach',
   },
-};
+
+  web: {
+    favicon: './assets/favicon.png',
+  },
+
+  plugins: [
+    [
+      'expo-speech-recognition',
+      {
+        microphonePermission:
+          'Allow PotLink to access your microphone for voice input functionality.',
+        speechRecognitionPermission:
+          'Allow PotLink to use speech recognition to transcribe your voice input.',
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Allow PotLink to access your photos to add images to your pots.',
+        cameraPermission:
+          'Allow PotLink to access your camera to take photos of your pots.',
+      },
+    ],
+    [
+      'expo-location',
+      {
+        locationAlwaysAndWhenInUsePermission:
+          'Allow PotLink to use your location to record where your pots are located and fetch local weather data.',
+      },
+    ],
+    [
+      'expo-camera',
+      {
+        cameraPermission:
+          'Allow PotLink to access your camera to scan your plants.',
+      },
+    ],
+  ],
+});
