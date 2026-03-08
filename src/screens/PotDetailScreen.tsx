@@ -33,6 +33,7 @@ import { Screen } from '@eb-packages/ui';
 import { analytics, trackPotDeleted } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 import { DiagnosisDrawer } from '../components/DiagnosisDrawer';
+import { CameraDiagnosisOverlay } from '../components/CameraDiagnosisOverlay';
 
 interface PotDetailScreenProps {
   pot: Pot;
@@ -55,7 +56,12 @@ export const PotDetailScreen = ({
     null,
   );
   const [logs, setLogs] = React.useState<PotDiagnosisLog[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(!!autoOpenDiagnosis);
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [isCameraOpen, setIsCameraOpen] = React.useState(!!autoOpenDiagnosis);
+  const [capturedImages, setCapturedImages] = React.useState<{
+    general: string;
+    soil: string;
+  } | null>(null);
 
   useScreenLogger('PotDetailScreen');
 
@@ -129,7 +135,7 @@ export const PotDetailScreen = ({
   };
 
   const handleDiagnose = () => {
-    setIsDrawerOpen(true);
+    setIsCameraOpen(true);
   };
 
   const handleDiagnosisSuccess = (newLog: PotDiagnosisLog) => {
@@ -500,8 +506,24 @@ export const PotDetailScreen = ({
       <DiagnosisDrawer
         visible={isDrawerOpen}
         pot={pot}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setCapturedImages(null);
+        }}
         onSuccess={handleDiagnosisSuccess}
+        initialGeneralImage={capturedImages?.general}
+        initialSoilImage={capturedImages?.soil}
+        autoStart={!!capturedImages}
+      />
+
+      <CameraDiagnosisOverlay
+        visible={isCameraOpen}
+        onCancel={() => setIsCameraOpen(false)}
+        onComplete={(generalImage, soilImage) => {
+          setIsCameraOpen(false);
+          setCapturedImages({ general: generalImage, soil: soilImage });
+          setIsDrawerOpen(true);
+        }}
       />
     </Screen>
   );

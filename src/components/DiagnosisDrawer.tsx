@@ -24,6 +24,9 @@ interface DiagnosisDrawerProps {
   onClose: () => void;
   onSuccess: (log: PotDiagnosisLog) => void;
   initialLog?: PotDiagnosisLog;
+  initialGeneralImage?: string;
+  initialSoilImage?: string;
+  autoStart?: boolean;
 }
 
 type DrawerState = 'IDLE' | 'ANALYZING' | 'RESULT';
@@ -41,6 +44,9 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
   onClose,
   onSuccess,
   initialLog,
+  initialGeneralImage,
+  initialSoilImage,
+  autoStart,
 }) => {
   const [step, setStep] = useState<DrawerState>('IDLE');
 
@@ -68,14 +74,34 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
         setStep('IDLE');
         setResultLog(null);
       }
-      setGeneralImage(null);
-      setSoilImage(null);
+      setGeneralImage(initialGeneralImage || null);
+      setSoilImage(initialSoilImage || null);
       setMessageIndex(0);
       setChatMessage('');
       setIsSendingChat(false);
       setIsChatActive(false);
     }
-  }, [visible, initialLog]);
+  }, [visible, initialLog, initialGeneralImage, initialSoilImage]);
+
+  useEffect(() => {
+    if (
+      visible &&
+      autoStart &&
+      initialGeneralImage &&
+      initialSoilImage &&
+      !initialLog &&
+      step === 'IDLE'
+    ) {
+      startDiagnosis(initialGeneralImage, initialSoilImage);
+    }
+  }, [
+    visible,
+    autoStart,
+    initialGeneralImage,
+    initialSoilImage,
+    initialLog,
+    step,
+  ]);
 
   // Rotator for analyzing messages
   useEffect(() => {
@@ -114,8 +140,14 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
     }
   };
 
-  const startDiagnosis = async () => {
-    if (!generalImage || !soilImage) {
+  const startDiagnosis = async (
+    forcedGenImg?: string,
+    forcedSoilImg?: string,
+  ) => {
+    const currentGen = forcedGenImg || generalImage;
+    const currentSoil = forcedSoilImg || soilImage;
+
+    if (!currentGen || !currentSoil) {
       Alert.alert('Faltan fotos', 'Por favor tomá ambas fotos para continuar.');
       return;
     }
@@ -124,8 +156,8 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
     try {
       const newLog = await diagnosePlant({
         potId: pot.id,
-        generalImage,
-        soilImage,
+        generalImage: currentGen,
+        soilImage: currentSoil,
         name: pot.name,
         species: pot.species,
       });
@@ -216,7 +248,7 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
           styles.submitButton,
           (!generalImage || !soilImage) && styles.submitButtonDisabled,
         ]}
-        onPress={startDiagnosis}
+        onPress={() => startDiagnosis()}
         disabled={!generalImage || !soilImage}
       >
         <Text style={styles.submitButtonText}>Iniciar Diagnóstico</Text>
