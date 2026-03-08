@@ -6,7 +6,7 @@
     "base": {
       "cache": {
         "key": "potlink-{{ checksum 'yarn.lock' }}",
-        "customPaths": ["node_modules", "apps/potlink-mobile/node_modules"]
+        "paths": ["node_modules", "../../node_modules"]
       }
     },
     "development": {
