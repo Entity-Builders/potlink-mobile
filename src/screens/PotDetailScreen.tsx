@@ -10,8 +10,14 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-// Removed direct ImagePicker import since Drawer handles it
 import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Leaf,
+  Droplets,
+  Bug,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react-native';
 import type {
   Pot,
   SpeciesCareGuide,
@@ -180,6 +186,147 @@ export const PotDetailScreen = ({
             </LinearGradient>
           </TouchableOpacity>
         </View>
+
+        {/* ── Tablero Médico (Bento Box) ── */}
+        {logs.length > 0 && logs[0].metadata && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tablero Médico</Text>
+
+            <View style={styles.bentoGrid}>
+              {/* Fila 1: Suelo y Vitalidad */}
+              <View style={styles.bentoRow}>
+                {/* Bento: Suelo */}
+                <View style={styles.bentoCard}>
+                  <View
+                    style={[
+                      styles.bentoIconBadge,
+                      { backgroundColor: '#e3f2fd' },
+                    ]}
+                  >
+                    <Droplets size={24} color='#1976d2' strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.bentoTitle}>Humedad Tierra</Text>
+                  <Text
+                    style={[
+                      styles.bentoValue,
+                      logs[0].metadata.soil_condition === 'dry'
+                        ? styles.colorWarning
+                        : logs[0].metadata.soil_condition === 'waterlogged'
+                          ? styles.colorDanger
+                          : styles.colorGood,
+                    ]}
+                  >
+                    {logs[0].metadata.soil_condition === 'dry'
+                      ? 'Reseca'
+                      : logs[0].metadata.soil_condition === 'moist'
+                        ? 'Adecuada'
+                        : logs[0].metadata.soil_condition === 'waterlogged'
+                          ? 'Encharcada'
+                          : 'Desconocida'}
+                  </Text>
+                </View>
+
+                {/* Bento: Vitalidad */}
+                <View style={styles.bentoCard}>
+                  <View
+                    style={[
+                      styles.bentoIconBadge,
+                      { backgroundColor: '#e8f5e9' },
+                    ]}
+                  >
+                    <Leaf size={24} color='#388e3c' strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.bentoTitle}>Vitalidad General</Text>
+                  <Text
+                    style={[
+                      styles.bentoValue,
+                      logs[0].metadata.plant_vitality === 'healthy'
+                        ? styles.colorGood
+                        : logs[0].metadata.plant_vitality === 'wilted'
+                          ? styles.colorWarning
+                          : logs[0].metadata.plant_vitality === 'drooping'
+                            ? styles.colorDanger
+                            : styles.colorNeutral,
+                    ]}
+                  >
+                    {logs[0].metadata.plant_vitality === 'healthy'
+                      ? 'Excelente'
+                      : logs[0].metadata.plant_vitality === 'wilted'
+                        ? 'Marchita'
+                        : logs[0].metadata.plant_vitality === 'drooping'
+                          ? 'Caída'
+                          : 'Desconocida'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Fila 2: Inmunología (Ancho Completo) */}
+              <View style={[styles.bentoCard, styles.bentoCardFull]}>
+                <View style={styles.bentoRow}>
+                  <View
+                    style={[
+                      styles.bentoIconBadge,
+                      {
+                        backgroundColor:
+                          logs[0].metadata.has_pests ||
+                          logs[0].metadata.suspected_disease !== 'none'
+                            ? '#ffebee'
+                            : '#f1f8f5',
+                      },
+                    ]}
+                  >
+                    <Bug
+                      size={32}
+                      color={
+                        logs[0].metadata.has_pests ||
+                        logs[0].metadata.suspected_disease !== 'none'
+                          ? '#d32f2f'
+                          : '#2D6A4F'
+                      }
+                    />
+                  </View>
+
+                  <View style={styles.bentoContentRight}>
+                    <Text style={styles.bentoTitle}>Análisis Inmunológico</Text>
+
+                    {logs[0].metadata.has_pests ||
+                    (logs[0].metadata.suspected_disease &&
+                      logs[0].metadata.suspected_disease !== 'none') ? (
+                      <View style={styles.bentoPestAlert}>
+                        <AlertCircle
+                          size={16}
+                          color='#d32f2f'
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text style={styles.bentoPestText}>
+                          {logs[0].metadata.has_pests
+                            ? `Plaga detectada: ${logs[0].metadata.pest_type?.[0] || 'Desconocida'}`
+                            : 'Riesgo de enfermedad'}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.bentoPestAlert}>
+                        <CheckCircle2
+                          size={16}
+                          color='#388e3c'
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text style={styles.bentoPestTextGood}>
+                          Ninguna plaga visible
+                        </Text>
+                      </View>
+                    )}
+
+                    <Text style={styles.bentoTimestamp}>
+                      Actualizado:{' '}
+                      {new Date(logs[0].created_at).toLocaleDateString('es-AR')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* ── Reglas de Oro (Basic Care) ── */}
         <View style={styles.section}>
@@ -468,6 +615,94 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1B4332',
     marginBottom: 16,
+  },
+
+  // ── Bento Box Dashboard ──
+  bentoGrid: {
+    gap: 12,
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bentoCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoCardFull: {
+    flex: 0,
+    alignItems: 'flex-start',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  bentoIconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  bentoTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#718096',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  bentoValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  colorGood: {
+    color: '#2e7d32',
+  },
+  colorWarning: {
+    color: '#ed6c02',
+  },
+  colorDanger: {
+    color: '#d32f2f',
+  },
+  colorNeutral: {
+    color: '#333333',
+  },
+  bentoContentRight: {
+    flex: 1,
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  bentoPestAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  bentoPestText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#d32f2f',
+  },
+  bentoPestTextGood: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#388e3c',
+  },
+  bentoTimestamp: {
+    fontSize: 12,
+    color: '#A0AEC0',
+    fontWeight: '500',
   },
 
   // ── Rules Card ──
