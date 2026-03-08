@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Alert,
 } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import type { Pot } from '@eb-packages/garden';
@@ -118,6 +119,12 @@ export function AppNavigator({
             session={session}
             onPotPress={(pot) => onNavigateTo({ type: 'OPEN_DETAIL', pot })}
             onLogout={onLogout}
+            onCameraPress={() =>
+              Alert.alert(
+                'Diagnóstico Médico',
+                'Elegí una planta de tu agenda verde abajo, y tocá "Consultar al Doctor" para sacar la foto 🚑.',
+              )
+            }
           />
         );
       case 'calendar':

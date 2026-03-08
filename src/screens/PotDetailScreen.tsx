@@ -8,27 +8,32 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import type { Pot, SpeciesCareGuide, CareSchedule } from '@eb-packages/garden';
+// Removed direct ImagePicker import since Drawer handles it
+import { LinearGradient } from 'expo-linear-gradient';
+import type {
+  Pot,
+  SpeciesCareGuide,
+  PotDiagnosisLog,
+} from '@eb-packages/garden';
 import {
   deletePot,
   getSpeciesCareGuide,
-  getCareSchedules,
+  getDiagnosisLogs,
+  diagnosePlant,
 } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
-import { CareHistoryList } from '../components/Care/CareHistoryList';
-import { PlantQuickInfo } from '../components/Care/PlantQuickInfo';
-import { WeatherAlert } from '../components/Care/WeatherAlert';
-import { PlantAdvisor } from '../components/Care/PlantAdvisor';
 import { analytics, trackPotDeleted } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
+import { DiagnosisDrawer } from '../components/DiagnosisDrawer';
 
 interface PotDetailScreenProps {
   pot: Pot;
   onBack: () => void;
   onEdit: () => void;
   onDeleted: () => void;
-  onCareSettings: () => void;
+  // Note: onCareSettings is removed as we dropped manual schedules
 }
 
 export const PotDetailScreen = ({
@@ -36,12 +41,12 @@ export const PotDetailScreen = ({
   onBack,
   onEdit,
   onDeleted,
-  onCareSettings,
 }: PotDetailScreenProps) => {
   const [careGuide, setCareGuide] = React.useState<SpeciesCareGuide | null>(
     null,
   );
-  const [schedules, setSchedules] = React.useState<CareSchedule[]>([]);
+  const [logs, setLogs] = React.useState<PotDiagnosisLog[]>([]);
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
   useScreenLogger('PotDetailScreen');
 
@@ -57,28 +62,13 @@ export const PotDetailScreen = ({
           }),
         );
     }
-    getCareSchedules(pot.id)
-      .then(setSchedules)
-      .catch((err) =>
-        analytics.captureError(err, {
-          screen: 'PotDetailScreen',
-          action: 'getCareSchedules',
-          potId: pot.id,
-        }),
-      );
-  }, [pot.species, pot.id]);
 
-  const [activeTab, setActiveTab] = React.useState<
-    'resumen' | 'cuidados' | 'detalles'
-  >('resumen');
-
-  const handleTabPress = (tab: 'resumen' | 'cuidados' | 'detalles') => {
-    analytics.track('pot_detail_tab_switched', { tab, pot_id: pot.id });
-    setActiveTab(tab);
-  };
+    getDiagnosisLogs(pot.id)
+      .then(setLogs)
+      .catch((err) => console.error('Error fetching logs:', err));
+  }, [pot.id, pot.species]);
 
   const handleDelete = async () => {
-    // For web, use window.confirm as fallback
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(
         `¿Estás seguro de que querés eliminar "${pot.name}"? No se puede deshacer.`,
@@ -87,7 +77,7 @@ export const PotDetailScreen = ({
 
       const success = await deletePot(pot.id);
       if (success) {
-        alert('Pot eliminado');
+        alert('Planta eliminada');
         onDeleted();
       } else {
         alert('Error al eliminar. Intentá de nuevo.');
@@ -95,9 +85,8 @@ export const PotDetailScreen = ({
       return;
     }
 
-    // For native platforms
     Alert.alert(
-      'Eliminar Pot',
+      'Eliminar Planta',
       `¿Estás seguro de que querés eliminar "${pot.name}"? No se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -108,7 +97,7 @@ export const PotDetailScreen = ({
             const success = await deletePot(pot.id);
             if (success) {
               trackPotDeleted(pot.id);
-              Alert.alert('Listo', 'Pot eliminado', [
+              Alert.alert('Listo', 'Planta eliminada', [
                 { text: 'OK', onPress: onDeleted },
               ]);
             } else {
@@ -120,14 +109,23 @@ export const PotDetailScreen = ({
     );
   };
 
-  const getStateLabel = (state: string) => {
-    const labels = {
-      seeds: '🌱 Semillas',
-      seedling: '🌿 Brote',
-      young: '🪴 Planta joven',
-      mature: '🌳 Planta madura',
+  const getStateEmoji = (state: string) => {
+    const emojis = {
+      seeds: '🌱',
+      seedling: '🌿',
+      young: '🪴',
+      mature: '🌳',
     };
-    return labels[state as keyof typeof labels] || state;
+    return emojis[state as keyof typeof emojis] || '🌱';
+  };
+
+  const handleDiagnose = () => {
+    setIsDrawerOpen(true);
+  };
+
+  const handleDiagnosisSuccess = (newLog: PotDiagnosisLog) => {
+    // prepend new log
+    setLogs((prev) => [newLog, ...prev]);
   };
 
   return (
@@ -136,256 +134,193 @@ export const PotDetailScreen = ({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{pot.name}</Text>
+        <Text style={styles.headerTitle}>Ficha Clínica</Text>
         <TouchableOpacity style={styles.editButtonHeader} onPress={onEdit}>
           <Text style={styles.editButtonTextHeader}>✏️</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[
-            styles.tabItem,
-            activeTab === 'resumen' && styles.tabItemActive,
-          ]}
-          onPress={() => handleTabPress('resumen')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'resumen' && styles.tabTextActive,
-            ]}
-          >
-            Resumen
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tabItem,
-            activeTab === 'cuidados' && styles.tabItemActive,
-          ]}
-          onPress={() => handleTabPress('cuidados')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'cuidados' && styles.tabTextActive,
-            ]}
-          >
-            Cuidados
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tabItem,
-            activeTab === 'detalles' && styles.tabItemActive,
-          ]}
-          onPress={() => handleTabPress('detalles')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'detalles' && styles.tabTextActive,
-            ]}
-          >
-            Detalles
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {activeTab === 'resumen' && (
-          <>
-            {/* Hero Section */}
-            <View style={styles.heroSection}>
-              <View style={styles.imageContainer}>
-                {pot.photo_url ? (
-                  <Image
-                    source={{ uri: pot.photo_url }}
-                    style={styles.heroImage}
-                  />
-                ) : (
-                  <View style={styles.placeholderImage}>
-                    <Text style={styles.placeholderIcon}>🌱</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.heroName}>{pot.name}</Text>
-              <Text style={styles.heroSpecies}>{pot.species}</Text>
-              <View style={styles.chipRow}>
-                <View style={styles.stateChip}>
-                  <Text style={styles.stateChipText}>
-                    {getStateLabel(pot.initial_state)}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.stateChip,
-                    pot.location_type === 'indoor'
-                      ? { backgroundColor: '#fff3e0', borderColor: '#ffe0b2' }
-                      : { backgroundColor: '#e8f5e9', borderColor: '#c8e6c9' },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.stateChipText,
-                      {
-                        color:
-                          pot.location_type === 'indoor'
-                            ? '#e65100'
-                            : '#2e7d32',
-                      },
-                    ]}
-                  >
-                    {pot.location_type === 'indoor'
-                      ? '🏠 Interior'
-                      : '🌳 Exterior'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Smart Plant Advisor — contextual Q&A */}
-            <PlantAdvisor
-              species={pot.species}
-              registeredAt={pot.registered_at}
-              schedules={schedules}
-              careGuide={careGuide}
-              weatherCondition={pot.weather_condition}
-              temperature={pot.temperature}
-              humidity={pot.humidity}
-              latitude={pot.latitude}
-              locationType={pot.location_type}
-            />
-
-            {/* Quick Info Cards */}
-            <PlantQuickInfo
-              registeredAt={pot.registered_at}
-              schedules={schedules}
-              careGuide={careGuide}
-            />
-
-            {/* Weather Alerts */}
-            <WeatherAlert
-              weatherCondition={pot.weather_condition}
-              weatherDescription={pot.weather_description}
-              temperature={pot.temperature}
-              humidity={pot.humidity}
-            />
-          </>
-        )}
-
-        {activeTab === 'cuidados' && (
-          <>
-            {/* Care Management Link */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Cuidados programados</Text>
-                <TouchableOpacity onPress={onCareSettings}>
-                  <Text style={styles.linkButton}>Configurar ⚙️</Text>
-                </TouchableOpacity>
-              </View>
-              {schedules.length === 0 && (
-                <TouchableOpacity
-                  style={styles.emptyScheduleCard}
-                  onPress={onCareSettings}
-                >
-                  <Text style={styles.emptyScheduleIcon}>📋</Text>
-                  <Text style={styles.emptyScheduleText}>
-                    No tenés horarios configurados.{'\n'}
-                    <Text style={styles.emptyScheduleLink}>
-                      Tocá aquí para crear uno
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* History Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Historial de acciones</Text>
-              <CareHistoryList potId={pot.id} />
-            </View>
-          </>
-        )}
-
-        {activeTab === 'detalles' && (
-          <>
-            {/* About Section (Technical Details — less prominent) */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitleSmall}>Más info</Text>
-              <View style={styles.aboutCard}>
-                <View style={styles.aboutRow}>
-                  <Text style={styles.aboutLabel}>Registrada</Text>
-                  <Text style={styles.aboutValue}>
-                    {new Date(pot.registered_at).toLocaleDateString('es-AR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </Text>
-                </View>
-
-                <View style={styles.aboutRow}>
-                  <Text style={styles.aboutLabel}>Humedad umbral</Text>
-                  <Text style={styles.aboutValue}>
-                    {pot.moisture_threshold}%
-                  </Text>
-                </View>
-
-                {pot.sensor_id && (
-                  <View style={styles.aboutRow}>
-                    <Text style={styles.aboutLabel}>Sensor</Text>
-                    <Text style={styles.aboutValue}>{pot.sensor_id}</Text>
-                  </View>
-                )}
-
-                {pot.latitude && pot.longitude && (
-                  <View style={[styles.aboutRow, { borderBottomWidth: 0 }]}>
-                    <Text style={styles.aboutLabel}>Ubicación</Text>
-                    <Text style={styles.aboutValue}>
-                      {pot.address ||
-                        `${pot.latitude.toFixed(4)}, ${pot.longitude.toFixed(4)}`}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Danger Zone */}
-            <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
-              <Text style={styles.deleteLinkText}>Eliminar Pot</Text>
-            </TouchableOpacity>
-
-            {__DEV__ && (
-              <View style={styles.debugSection}>
-                <Text style={styles.debugTitle}>Debug Metadata</Text>
-                <Text style={styles.debugContent}>
-                  {JSON.stringify(pot, null, 2)}
-                </Text>
-
-                <Text style={[styles.debugTitle, { marginTop: 16 }]}>
-                  Care Schedules ({schedules.length})
-                </Text>
-                <Text style={styles.debugContent}>
-                  {JSON.stringify(schedules, null, 2)}
-                </Text>
-
-                <Text style={[styles.debugTitle, { marginTop: 16 }]}>
-                  Species Care Guide
-                </Text>
-                <Text style={styles.debugContent}>
-                  {careGuide
-                    ? JSON.stringify(careGuide, null, 2)
-                    : 'Not found or loading...'}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Hero Profile ── */}
+        <View style={styles.heroSection}>
+          <View style={styles.imageContainer}>
+            {pot.photo_url ? (
+              <Image source={{ uri: pot.photo_url }} style={styles.heroImage} />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderIcon}>
+                  {getStateEmoji(pot.initial_state)}
                 </Text>
               </View>
             )}
-          </>
-        )}
+          </View>
+
+          <Text style={styles.heroName}>{pot.name}</Text>
+          <Text style={styles.heroSpecies}>
+            {pot.species || 'Especie oculta'}
+          </Text>
+
+          {/* ── Action: Diagnosticar ── */}
+          <TouchableOpacity
+            style={styles.diagnoseButton}
+            onPress={handleDiagnose}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['#1B4332', '#2D6A4F']}
+              style={styles.diagnoseGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Text style={styles.diagnoseIcon}>🚑</Text>
+              <Text style={styles.diagnoseText}>Consultar al Doctor</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Reglas de Oro (Basic Care) ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Reglas de Oro</Text>
+          <View style={styles.rulesCard}>
+            <View style={styles.ruleItem}>
+              <View style={styles.ruleIconWrap}>
+                <Text style={styles.ruleIcon}>💧</Text>
+              </View>
+              <View style={styles.ruleContent}>
+                <Text style={styles.ruleLabel}>Riego</Text>
+                <Text style={styles.ruleValue}>
+                  {careGuide
+                    ? careGuide.watering_frequency
+                    : 'Chequeá si la tierra está seca antes de regar.'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.ruleDivider} />
+
+            <View style={styles.ruleItem}>
+              <View
+                style={[styles.ruleIconWrap, { backgroundColor: '#fff8e1' }]}
+              >
+                <Text style={styles.ruleIcon}>☀️</Text>
+              </View>
+              <View style={styles.ruleContent}>
+                <Text style={styles.ruleLabel}>Luz</Text>
+                <Text style={styles.ruleValue}>
+                  {careGuide
+                    ? careGuide.light_requirements
+                    : pot.location_type === 'indoor'
+                      ? 'Luz indirecta brillante.'
+                      : 'Sol directo o semisombra.'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Historial Clínico ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Historial Clínico</Text>
+          {logs.length === 0 ? (
+            <View style={styles.historyEmptyCard}>
+              <Text style={styles.historyEmptyEmoji}>📝</Text>
+              <Text style={styles.historyEmptyTitle}>
+                No hay consultas previas
+              </Text>
+              <Text style={styles.historyEmptySubtitle}>
+                Cuando tengas dudas sobre {pot.name}, tocá en "Consultar al
+                Doctor" para recibir un diagnóstico.
+              </Text>
+            </View>
+          ) : (
+            logs.map((log) => (
+              <View key={log.id} style={styles.logCard}>
+                <View style={styles.logHeader}>
+                  <Text style={styles.logDate}>
+                    {new Date(log.created_at).toLocaleDateString('es-AR', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </Text>
+                  <View
+                    style={[
+                      styles.urgencyBadge,
+                      log.urgency === 'high'
+                        ? styles.urgencyHigh
+                        : log.urgency === 'medium'
+                          ? styles.urgencyMedium
+                          : styles.urgencyLow,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.urgencyText,
+                        log.urgency === 'high' ? styles.urgencyTextHigh : {},
+                      ]}
+                    >
+                      {log.urgency.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.logImagesRow}>
+                  {log.general_image_url &&
+                    log.general_image_url !== 'pending' && (
+                      <Image
+                        source={{ uri: log.general_image_url }}
+                        style={[
+                          styles.logImage,
+                          log.soil_image_url
+                            ? { flex: 1, marginRight: 8 }
+                            : { width: '100%' },
+                        ]}
+                      />
+                    )}
+                  {log.soil_image_url && log.soil_image_url !== 'pending' && (
+                    <Image
+                      source={{ uri: log.soil_image_url }}
+                      style={[styles.logImage, { flex: 1 }]}
+                    />
+                  )}
+                </View>
+
+                {log.user_query && (
+                  <Text style={styles.logQuery}>"{log.user_query}"</Text>
+                )}
+                <Text style={styles.logDiagnosis}>{log.ai_diagnosis}</Text>
+
+                {log.action_plan && log.action_plan.length > 0 && (
+                  <View style={styles.actionPlanContainer}>
+                    <Text style={styles.actionPlanTitle}>Plan de Acción:</Text>
+                    {log.action_plan.map((step, idx) => (
+                      <Text key={idx} style={styles.actionPlanStep}>
+                        • {step}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* ── Danger Zone ── */}
+        <TouchableOpacity style={styles.deleteLink} onPress={handleDelete}>
+          <Text style={styles.deleteLinkText}>Eliminar Planta</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <DiagnosisDrawer
+        visible={isDrawerOpen}
+        pot={pot}
+        onClose={() => setIsDrawerOpen(false)}
+        onSuccess={handleDiagnosisSuccess}
+      />
     </Screen>
   );
 };
@@ -393,7 +328,7 @@ export const PotDetailScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f7f5',
+    backgroundColor: '#F9FAF9',
   },
   header: {
     flexDirection: 'row',
@@ -402,7 +337,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: '#f5f7f5',
+    backgroundColor: '#F9FAF9',
     zIndex: 10,
   },
   headerTitle: {
@@ -436,221 +371,274 @@ const styles = StyleSheet.create({
   editButtonTextHeader: {
     fontSize: 16,
   },
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 0,
-    backgroundColor: '#f5f7f5',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  tabItem: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabItemActive: {
-    borderBottomColor: '#2e7d32',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#757575',
-  },
-  tabTextActive: {
-    color: '#2e7d32',
-    fontWeight: '800',
-  },
   scrollContent: {
     paddingBottom: 40,
-    paddingTop: 16,
   },
+
+  // ── Hero Section ──
   heroSection: {
     alignItems: 'center',
     paddingVertical: 24,
-    paddingBottom: 20,
-    backgroundColor: '#edf7ed',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    marginBottom: 16,
+    paddingHorizontal: 20,
   },
   imageContainer: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 16,
-    borderRadius: 24,
+    shadowRadius: 16,
+    elevation: 8,
+    marginBottom: 20,
+    borderRadius: 36,
     backgroundColor: '#fff',
   },
   heroImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 28,
+    width: 160,
+    height: 160,
+    borderRadius: 36,
     backgroundColor: '#f0f0f0',
   },
   placeholderImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 28,
-    backgroundColor: '#c8e6c9',
+    width: 160,
+    height: 160,
+    borderRadius: 36,
+    backgroundColor: '#D8F3DC',
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderIcon: {
-    fontSize: 52,
+    fontSize: 70,
   },
   heroName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#1b5e20',
+    color: '#1B4332',
     marginBottom: 4,
     textAlign: 'center',
   },
   heroSpecies: {
-    fontSize: 14,
-    color: '#4caf50',
+    fontSize: 15,
+    color: '#52B788',
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 24,
     fontStyle: 'italic',
   },
-  stateChip: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
+
+  // ── Diagnose Button ──
+  diagnoseButton: {
+    width: '100%',
+    shadowColor: '#2D6A4F',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#c8e6c9',
   },
-  stateChipText: {
-    fontSize: 13,
-    color: '#2e7d32',
-    fontWeight: '600',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1b5e20',
-    marginBottom: 12,
-  },
-  sectionTitleSmall: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#9e9e9e',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  linkButton: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2e7d32',
-    backgroundColor: '#e8f5e9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  emptyScheduleCard: {
+  diagnoseGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 20,
     gap: 12,
   },
-  emptyScheduleIcon: {
-    fontSize: 28,
+  diagnoseIcon: {
+    fontSize: 24,
   },
-  emptyScheduleText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+  diagnoseText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  emptyScheduleLink: {
-    color: '#2e7d32',
-    fontWeight: '600',
+
+  // ── Sections ──
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 28,
   },
-  aboutCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1B4332',
+    marginBottom: 16,
   },
-  aboutRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  aboutLabel: {
-    fontSize: 13,
-    color: '#888',
-    flex: 1,
-  },
-  aboutValue: {
-    fontSize: 13,
-    color: '#333',
-    fontWeight: '500',
-    flex: 2,
-    textAlign: 'right',
-  },
-  deleteLink: {
-    alignItems: 'center',
+
+  // ── Rules Card ──
+  rulesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 16,
-    marginTop: 8,
-    marginHorizontal: 20,
-    borderRadius: 14,
-    backgroundColor: '#fff5f5',
     borderWidth: 1,
-    borderColor: '#ffcdd2',
+    borderColor: 'rgba(0,0,0,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  deleteLinkText: {
-    color: '#c62828',
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  ruleIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#eaf8ed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ruleIcon: {
+    fontSize: 20,
+  },
+  ruleContent: {
+    flex: 1,
+  },
+  ruleLabel: {
     fontSize: 14,
     fontWeight: '700',
+    color: '#1B4332',
+    marginBottom: 2,
   },
-  debugSection: {
-    marginTop: 24,
-    marginHorizontal: 20,
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  debugTitle: {
+  ruleValue: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+    color: '#555',
+    lineHeight: 20,
+  },
+  ruleDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginVertical: 16,
+    marginLeft: 60,
+  },
+
+  // ── History Empty ──
+  historyEmptyCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    borderStyle: 'dashed',
+    gap: 8,
+  },
+  historyEmptyEmoji: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  historyEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1B4332',
+  },
+  historyEmptySubtitle: {
+    fontSize: 14,
+    color: '#777',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
+  // ── Log Cards ──
+  logCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 16,
+  },
+  logHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  logDate: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1B4332',
+  },
+  urgencyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  urgencyHigh: {
+    backgroundColor: '#FFCDD2',
+  },
+  urgencyMedium: {
+    backgroundColor: '#FFF9C4',
+  },
+  urgencyLow: {
+    backgroundColor: '#C8E6C9',
+  },
+  urgencyText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#555',
+  },
+  urgencyTextHigh: {
+    color: '#B71C1C',
+  },
+  logImagesRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  logImage: {
+    height: 180,
+    borderRadius: 12,
+  },
+  logQuery: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#555',
     marginBottom: 8,
   },
-  debugContent: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 12,
+  logDiagnosis: {
+    fontSize: 15,
     color: '#333',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  actionPlanContainer: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 12,
+  },
+  actionPlanTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1B4332',
+    marginBottom: 8,
+  },
+  actionPlanStep: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+
+  // ── Danger Zone ──
+  deleteLink: {
+    alignItems: 'center',
+    padding: 18,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+    marginTop: 10,
+  },
+  deleteLinkText: {
+    color: '#C62828',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

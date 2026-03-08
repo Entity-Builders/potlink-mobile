@@ -128,9 +128,6 @@ export default function App() {
             onBack={() => setModal({ screen: 'none' })}
             onEdit={() => setModal({ screen: 'edit', pot: modal.pot })}
             onDeleted={() => setModal({ screen: 'none' })}
-            onCareSettings={() =>
-              setModal({ screen: 'care-settings', pot: modal.pot })
-            }
           />
         ) : null;
 

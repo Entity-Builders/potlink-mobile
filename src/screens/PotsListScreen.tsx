@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getUserPots, getAllUserCareSchedules } from '@eb-packages/logic';
-import type { Pot, CareSchedule } from '@eb-packages/garden';
+import { getUserPots } from '@eb-packages/logic';
+import type { Pot } from '@eb-packages/garden';
 import type { Session } from '@supabase/supabase-js';
 import { analytics } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
@@ -22,20 +22,6 @@ import { useScreenLogger } from '../hooks/useScreenLogger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const CARE_ICONS: Record<string, string> = {
-  watering: '💧',
-  fertilizing: '🌿',
-  pruning: '✂️',
-  repotting: '🪴',
-};
-
-const CARE_LABELS: Record<string, string> = {
-  watering: 'Regar',
-  fertilizing: 'Fertilizar',
-  pruning: 'Podar',
-  repotting: 'Replantar',
-};
-
 const STATE_EMOJI: Record<string, string> = {
   seeds: '🌱',
   seedling: '🌿',
@@ -43,39 +29,13 @@ const STATE_EMOJI: Record<string, string> = {
   mature: '🌳',
 };
 
-// ── Urgency helpers ───────────────────────────────────────────────────────────
-
-type Urgency = 'urgent' | 'today' | 'week';
-
-function getUrgency(nextCareDate: Date | string): Urgency {
-  const now = new Date();
-  const care = new Date(nextCareDate);
-  const diffDays = Math.floor(
-    (care.getTime() - now.setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24),
-  );
-  if (diffDays < 0) return 'urgent';
-  if (diffDays === 0) return 'today';
-  return 'week';
-}
-
-function getUrgencyLabel(u: Urgency): string {
-  if (u === 'urgent') return 'URGENTE';
-  if (u === 'today') return 'HOY';
-  return 'ESTA SEMANA';
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-interface CareTaskWithPot {
-  schedule: CareSchedule;
-  pot: Pot;
-  urgency: Urgency;
-}
 
 interface PotsListScreenProps {
   session: Session | null;
   onPotPress: (pot: Pot) => void;
   onLogout: () => void;
+  onCameraPress?: () => void;
   /** When true, shows a full plant collection list view instead of the home layout */
   collectionMode?: boolean;
 }
@@ -86,10 +46,10 @@ export const PotsListScreen = ({
   session,
   onPotPress,
   onLogout,
+  onCameraPress,
   collectionMode = false,
 }: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
-  const [tasks, setTasks] = useState<CareTaskWithPot[]>([]);
   const [loading, setLoading] = useState(true);
 
   useScreenLogger('PotsListScreen');
@@ -99,40 +59,11 @@ export const PotsListScreen = ({
     session?.user?.email?.split('@')[0] ||
     'Jardinero';
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 19) return 'Buenas tardes';
-    return 'Buenas noches';
-  };
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const userPots = await getUserPots();
       setPots(userPots);
-
-      // Load all care schedules in a single query (more efficient)
-      const potsMap = userPots.reduce<Record<string, Pot>>((acc, p) => {
-        acc[p.id] = p;
-        return acc;
-      }, {});
-
-      const allSchedules = await getAllUserCareSchedules();
-      const allTasks: CareTaskWithPot[] = allSchedules
-        .filter((s) => s.next_care_date)
-        .map((s) => ({
-          schedule: s,
-          pot:
-            potsMap[s.pot_id] ?? ({ ...s.pot, id: s.pot_id } as unknown as Pot),
-          urgency: getUrgency(s.next_care_date!),
-        }))
-        .sort((a, b) => {
-          const order: Urgency[] = ['urgent', 'today', 'week'];
-          return order.indexOf(a.urgency) - order.indexOf(b.urgency);
-        });
-
-      setTasks(allTasks);
     } catch (error) {
       analytics.captureError(error, {
         screen: 'PotsListScreen',
@@ -205,12 +136,7 @@ export const PotsListScreen = ({
     );
   }
 
-  // ── Home mode ──────────────────────────────────────────────────────────────
-
-  const todayTasks = tasks.filter((t) => t.urgency !== 'week');
-  const weekTasks = tasks.filter((t) => t.urgency === 'week');
-  const visibleTasks = todayTasks.length > 0 ? todayTasks : tasks.slice(0, 3);
-  const allDone = tasks.length === 0;
+  // ── Home mode (Plant Doctor Pivot) ───────────────────────────────────────────
 
   return (
     <LinearGradient colors={['#1B4332', '#2D6A4F']} style={styles.flex}>
@@ -235,54 +161,47 @@ export const PotsListScreen = ({
         >
           {/* ── Greeting ── */}
           <View style={styles.greeting}>
-            <Text style={styles.greetingMain}>
-              {getGreeting()}, {userName} 👋
-            </Text>
-            <Text style={styles.greetingSubtitle}>
-              {allDone
-                ? '🎉 Todo al día, tu jardín está contento'
-                : 'Tus plantas te necesitan hoy'}
-            </Text>
+            <Text style={styles.greetingMain}>Hola, {userName} 👋</Text>
           </View>
 
-          {/* ── Card: Tareas de hoy ── */}
-          <View style={styles.glassCard}>
-            <Text style={styles.cardTitle}>📋 Tareas de hoy</Text>
-
-            {visibleTasks.length === 0 ? (
-              <View style={styles.allDoneRow}>
-                <Text style={styles.allDoneText}>
-                  ✅ Todo al día — ¡buen trabajo!
+          {/* ── Camera Hero CTA (El Doctor) ── */}
+          <TouchableOpacity
+            style={styles.cameraHero}
+            onPress={onCameraPress}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.08)']}
+              style={styles.cameraHeroGradient}
+            >
+              <Text style={styles.cameraIcon}>📸</Text>
+              <View style={styles.cameraHeroTextWrap}>
+                <Text style={styles.cameraHeroTitle}>
+                  ¿Alguna planta se ve mal?
+                </Text>
+                <Text style={styles.cameraHeroSubtitle}>
+                  Tómale una foto y descubramos qué le pasa juntas.
                 </Text>
               </View>
-            ) : (
-              visibleTasks.map((task) => (
-                <CareTaskRow key={task.schedule.id} task={task} />
-              ))
-            )}
+              <View style={styles.cameraHeroAction}>
+                <Text style={styles.cameraHeroActionText}>
+                  Consultar al doctor →
+                </Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
 
-            {weekTasks.length > 0 && visibleTasks.length > 0 && (
-              <Text style={styles.weekTasksHint}>
-                +{weekTasks.length} tareas esta semana
-              </Text>
-            )}
-          </View>
-
-          {/* ── Mis plantas ── */}
+          {/* ── Mis plantas (Agenda Visual) ── */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>
-              Mis plantas{pots.length > 0 ? ` (${pots.length})` : ''}
+              Tus Plantas{pots.length > 0 ? ` (${pots.length})` : ''}
             </Text>
           </View>
 
           {pots.length === 0 ? (
             <EmptyPlants />
           ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.plantCardsRow}
-            >
+            <View style={styles.plantsGrid}>
               {pots.map((pot) => (
                 <PlantCard
                   key={pot.id}
@@ -290,7 +209,7 @@ export const PotsListScreen = ({
                   onPress={() => onPotPress(pot)}
                 />
               ))}
-            </ScrollView>
+            </View>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -300,52 +219,13 @@ export const PotsListScreen = ({
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function CareTaskRow({ task }: { task: CareTaskWithPot }) {
-  const icon = CARE_ICONS[task.schedule.care_type] ?? '🌱';
-  const label = CARE_LABELS[task.schedule.care_type] ?? task.schedule.care_type;
-
-  return (
-    <View style={styles.taskRow}>
-      <Text style={styles.taskIcon}>{icon}</Text>
-      <Text style={styles.taskLabel} numberOfLines={1}>
-        <Text style={styles.taskAction}>{label}</Text>
-        {' · '}
-        {task.pot.name}
-      </Text>
-      <UrgencyBadge urgency={task.urgency} />
-      <View style={styles.taskCheckbox} />
-    </View>
-  );
-}
-
-function UrgencyBadge({ urgency }: { urgency: Urgency }) {
-  return (
-    <View
-      style={[
-        styles.badge,
-        urgency === 'urgent' && styles.badgeUrgent,
-        urgency === 'today' && styles.badgeToday,
-        urgency === 'week' && styles.badgeWeek,
-      ]}
-    >
-      <Text
-        style={[
-          styles.badgeText,
-          urgency === 'urgent' && styles.badgeTextUrgent,
-          urgency === 'today' && styles.badgeTextToday,
-          urgency === 'week' && styles.badgeTextWeek,
-        ]}
-      >
-        {getUrgencyLabel(urgency)}
-      </Text>
-    </View>
-  );
-}
-
 function PlantCard({ pot, onPress }: { pot: Pot; onPress: () => void }) {
+  // Compute width for 2 columns with gaps
+  const cardWidth = (SCREEN_WIDTH - 32 - 16) / 2;
+
   return (
     <TouchableOpacity
-      style={styles.plantCard}
+      style={[styles.plantCard, { width: cardWidth }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
@@ -356,19 +236,18 @@ function PlantCard({ pot, onPress }: { pot: Pot; onPress: () => void }) {
           resizeMode='cover'
         />
       ) : (
-        <Text style={styles.plantCardEmoji}>
-          {STATE_EMOJI[pot.initial_state] ?? '🌱'}
-        </Text>
+        <View style={styles.plantCardEmojiWrap}>
+          <Text style={styles.plantCardEmoji}>
+            {STATE_EMOJI[pot.initial_state] ?? '🌱'}
+          </Text>
+        </View>
       )}
-      <Text style={styles.plantCardName} numberOfLines={1}>
-        {pot.name}
-      </Text>
-      <Text style={styles.plantCardSpecies} numberOfLines={1}>
-        {pot.species}
-      </Text>
-      <View style={styles.plantCardFooter}>
-        <Text style={styles.plantCardLocation}>
-          {pot.location_type === 'indoor' ? '🔵 Interior' : '🟢 Exterior'}
+      <View style={styles.plantCardTextWrap}>
+        <Text style={styles.plantCardName} numberOfLines={1}>
+          {pot.name}
+        </Text>
+        <Text style={styles.plantCardSpecies} numberOfLines={1}>
+          {pot.species || 'Especie oculta'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -379,9 +258,9 @@ function EmptyPlants() {
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyEmoji}>🪴</Text>
-      <Text style={styles.emptyTitle}>No tenés plantas aún</Text>
+      <Text style={styles.emptyTitle}>Aún no diagnosticaste plantas</Text>
       <Text style={styles.emptySubtitle}>
-        Tocá ➕ para registrar tu primera maceta
+        Tus plantas aparecerán aquí cuando las registres
       </Text>
     </View>
   );
@@ -447,7 +326,6 @@ const styles = StyleSheet.create({
   // ── Greeting
   greeting: {
     paddingHorizontal: 20,
-    gap: 4,
   },
   greetingMain: {
     fontSize: 26,
@@ -455,96 +333,63 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -0.5,
   },
-  greetingSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '400',
-  },
 
-  // ── Glass Card
-  glassCard: {
+  // ── Camera Hero
+  cameraHero: {
     marginHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  cameraHeroGradient: {
+    padding: 24,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    gap: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 24,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 10,
+  cameraIcon: {
+    fontSize: 48,
+    marginBottom: 12,
   },
-
-  // ── Task Row
-  taskRow: {
-    flexDirection: 'row',
+  cameraHeroTextWrap: {
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-    gap: 8,
+    marginBottom: 20,
   },
-  taskIcon: { fontSize: 18, width: 24, textAlign: 'center' },
-  taskLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  taskAction: {
-    fontWeight: '600',
+  cameraHeroTitle: {
+    fontSize: 20,
+    fontWeight: '800',
     color: '#FFFFFF',
-  },
-  taskCheckbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-
-  // ── Badges
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  badgeUrgent: { backgroundColor: '#FF8C00' },
-  badgeTextUrgent: { color: '#FFFFFF' },
-  badgeToday: { backgroundColor: '#52B788' },
-  badgeTextToday: { color: '#FFFFFF' },
-  badgeWeek: { backgroundColor: 'rgba(255,255,255,0.15)' },
-  badgeTextWeek: { color: 'rgba(255,255,255,0.7)' },
-
-  allDoneRow: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  allDoneText: {
-    color: '#B7E4C7',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  weekTasksHint: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 12,
+    marginBottom: 8,
     textAlign: 'center',
-    paddingTop: 8,
+  },
+  cameraHeroSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 10,
+  },
+  cameraHeroAction: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 30,
+  },
+  cameraHeroActionText: {
+    color: '#1B4332',
+    fontSize: 15,
+    fontWeight: '700',
   },
 
   // ── Section Header
   sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
+    marginTop: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -555,8 +400,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
   potCount: {
@@ -564,19 +409,18 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.55)',
   },
 
-  // ── Plant Cards (horizontal)
-  plantCardsRow: {
+  // ── Plant Grid (Agenda Visual)
+  plantsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
-    gap: 12,
-    paddingBottom: 4,
+    gap: 16,
+    paddingBottom: 24,
   },
   plantCard: {
-    width: 130,
     backgroundColor: '#D8F3DC',
-    borderRadius: 18,
-    padding: 14,
-    alignItems: 'center',
-    gap: 6,
+    borderRadius: 20,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -584,35 +428,35 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   plantCardImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 14,
+    width: '100%',
+    aspectRatio: 1,
+  },
+  plantCardEmojiWrap: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: '#eaf8ed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   plantCardEmoji: {
-    fontSize: 44,
-    height: 70,
-    textAlignVertical: 'center',
-    lineHeight: 70,
+    fontSize: 50,
+  },
+  plantCardTextWrap: {
+    padding: 12,
+    alignItems: 'center',
   },
   plantCardName: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: '#1B4332',
     textAlign: 'center',
+    marginBottom: 4,
   },
   plantCardSpecies: {
-    fontSize: 11,
-    color: '#555',
-    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#407a52',
+    fontWeight: '600',
     textAlign: 'center',
-  },
-  plantCardFooter: {
-    marginTop: 2,
-  },
-  plantCardLocation: {
-    fontSize: 10,
-    color: '#666',
-    fontWeight: '500',
   },
 
   // ── Collection Mode
@@ -658,19 +502,21 @@ const styles = StyleSheet.create({
   // ── Empty State
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 40,
     paddingHorizontal: 24,
-    gap: 8,
+    gap: 10,
   },
-  emptyEmoji: { fontSize: 48 },
+  emptyEmoji: { fontSize: 56, marginBottom: 8 },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
+    textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
+    lineHeight: 22,
   },
 });
