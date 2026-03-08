@@ -9,11 +9,14 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Pot, PotDiagnosisLog } from '@eb-packages/garden';
-import { diagnosePlant } from '@eb-packages/logic';
+import { diagnosePlant, sendDiagnosisChat } from '@eb-packages/logic';
 
 interface DiagnosisDrawerProps {
   visible: boolean;
@@ -48,6 +51,9 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
 
   // Result State
   const [resultLog, setResultLog] = useState<PotDiagnosisLog | null>(null);
+  const [chatMessage, setChatMessage] = useState('');
+  const [isSendingChat, setIsSendingChat] = useState(false);
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Reset state when opened
   useEffect(() => {
@@ -57,6 +63,8 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
       setSoilImage(null);
       setResultLog(null);
       setMessageIndex(0);
+      setChatMessage('');
+      setIsSendingChat(false);
     }
   }, [visible]);
 
@@ -123,6 +131,40 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
     }
   };
 
+  const handleSendChat = async () => {
+    if (!chatMessage.trim() || !resultLog) return;
+
+    const messageToSend = chatMessage.trim();
+    setChatMessage('');
+    setIsSendingChat(true);
+
+    try {
+      const history = resultLog.chat_history || [];
+      const newHistory = await sendDiagnosisChat({
+        logId: resultLog.id,
+        history,
+        newMessage: messageToSend,
+        diagnosisContext: resultLog.ai_diagnosis,
+      });
+
+      // Update local state with new history
+      const updatedLog = { ...resultLog, chat_history: newHistory };
+      setResultLog(updatedLog);
+      onSuccess(updatedLog);
+
+      // Scroll to bottom after state update
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      console.error('Chat error:', error);
+      Alert.alert('Error', 'No se pudo enviar el mensaje.');
+      setChatMessage(messageToSend); // restore
+    } finally {
+      setIsSendingChat(false);
+    }
+  };
+
   const renderIdle = () => (
     <View style={styles.idleContainer}>
       <Text style={styles.instructions}>
@@ -185,51 +227,125 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
   const renderResult = () => {
     if (!resultLog) return null;
     return (
-      <ScrollView
-        style={styles.resultContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.chatBubble}>
-          <Text style={styles.doctorName}>👨‍⚕️ Plant Doctor</Text>
-          <Text style={styles.chatText}>{resultLog.ai_diagnosis}</Text>
-
-          <View
-            style={[
-              styles.urgencyBadge,
-              resultLog.urgency === 'high'
-                ? styles.urgencyHigh
-                : resultLog.urgency === 'medium'
-                  ? styles.urgencyMedium
-                  : styles.urgencyLow,
-            ]}
-          >
-            <Text style={styles.urgencyText}>
-              Urgencia: {resultLog.urgency.toUpperCase()}
+      <View style={styles.resultContainerWrapper}>
+        <ScrollView
+          style={styles.resultContainer}
+          showsVerticalScrollIndicator={false}
+          ref={scrollViewRef}
+          onContentSizeChange={() =>
+            scrollViewRef.current?.scrollToEnd({ animated: true })
+          }
+        >
+          {/* Initial Diagnosis (acts as first assistant message) */}
+          <View style={styles.originalResultContainer}>
+            <Text style={styles.originalDiagnosisTitle}>Diagnóstico:</Text>
+            <Text style={styles.originalDiagnosisText}>
+              {resultLog.ai_diagnosis}
             </Text>
+
+            <View
+              style={[
+                styles.urgencyBadge,
+                resultLog.urgency === 'high'
+                  ? styles.urgencyHigh
+                  : resultLog.urgency === 'medium'
+                    ? styles.urgencyMedium
+                    : styles.urgencyLow,
+              ]}
+            >
+              <Text style={styles.urgencyText}>
+                Urgencia: {resultLog.urgency.toUpperCase()}
+              </Text>
+            </View>
+
+            {resultLog.action_plan && resultLog.action_plan.length > 0 && (
+              <View style={styles.actionPlanContainer}>
+                <Text style={styles.actionPlanTitle}>Plan de Acción:</Text>
+                {resultLog.action_plan.map((step, idx) => (
+                  <Text key={idx} style={styles.actionPlanStep}>
+                    • {step}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
 
-          {resultLog.action_plan && resultLog.action_plan.length > 0 && (
-            <View style={styles.actionPlanContainer}>
-              <Text style={styles.actionPlanTitle}>Plan de Acción:</Text>
-              {resultLog.action_plan.map((step, idx) => (
-                <Text key={idx} style={styles.actionPlanStep}>
-                  • {step}
-                </Text>
-              ))}
+          <View style={styles.chatDivider} />
+
+          {/* Follow up chat history */}
+          {resultLog.chat_history?.map((msg, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.chatBubble,
+                msg.role === 'user'
+                  ? styles.userBubble
+                  : styles.assistantBubble,
+              ]}
+            >
+              <Text style={styles.doctorName}>
+                {msg.role === 'user' ? '👤 Vos' : '👨‍⚕️ Plant Doctor'}
+              </Text>
+              <Text
+                style={[
+                  styles.chatText,
+                  msg.role === 'user' && styles.userChatText,
+                ]}
+              >
+                {msg.content}
+              </Text>
+            </View>
+          ))}
+
+          {isSendingChat && (
+            <View
+              style={[
+                styles.chatBubble,
+                styles.assistantBubble,
+                styles.loadingBubble,
+              ]}
+            >
+              <ActivityIndicator size='small' color='#2D6A4F' />
+              <Text style={styles.loadingBubbleText}>Escribiendo...</Text>
             </View>
           )}
-        </View>
 
-        <TouchableOpacity style={styles.closeResultButton} onPress={onClose}>
-          <Text style={styles.closeResultText}>Ok, entiendo</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={{ height: 20 }} />
+        </ScrollView>
+
+        <View style={styles.chatInputContainer}>
+          <TextInput
+            style={styles.chatInput}
+            placeholder='Preguntale al doctor...'
+            placeholderTextColor='#999'
+            value={chatMessage}
+            onChangeText={setChatMessage}
+            multiline
+            maxLength={300}
+            editable={!isSendingChat}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!chatMessage.trim() || isSendingChat) &&
+                styles.sendButtonDisabled,
+            ]}
+            onPress={handleSendChat}
+            disabled={!chatMessage.trim() || isSendingChat}
+          >
+            <Text style={styles.sendButtonText}>Enviar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
   return (
     <Modal visible={visible} transparent animationType='slide'>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <TouchableOpacity
           style={styles.backdrop}
           onPress={onClose}
@@ -257,7 +373,7 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
             {step === 'RESULT' && renderResult()}
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -387,6 +503,26 @@ const styles = StyleSheet.create({
   resultContainer: {
     maxHeight: 500,
   },
+  originalResultContainer: {
+    marginBottom: 24,
+  },
+  originalDiagnosisTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1B4332',
+    marginBottom: 8,
+  },
+  originalDiagnosisText: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  chatDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 16,
+  },
   chatBubble: {
     backgroundColor: '#f0fdf4',
     padding: 16,
@@ -404,7 +540,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     lineHeight: 22,
-    marginBottom: 12,
   },
   urgencyBadge: {
     alignSelf: 'flex-start',
@@ -449,5 +584,74 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+
+  // Chat Added Styles
+  resultContainerWrapper: {
+    flexShrink: 1,
+  },
+  userBubble: {
+    backgroundColor: '#1B4332',
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+    borderBottomLeftRadius: 20,
+    marginLeft: 40,
+  },
+  assistantBubble: {
+    backgroundColor: '#f0fdf4',
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 20,
+    marginRight: 40,
+  },
+  userChatText: {
+    color: '#FFF',
+  },
+  chatInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    gap: 8,
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontSize: 15,
+    maxHeight: 100,
+    color: '#333',
+  },
+  sendButton: {
+    backgroundColor: '#2D6A4F',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 44, // Match approx physical height of single line input
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+  },
+  sendButtonText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  loadingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  loadingBubbleText: {
+    color: '#2D6A4F',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
