@@ -222,10 +222,12 @@ export const PotDetailScreen = ({
         </View>
 
         {/* ── Historial Clínico ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Historial Clínico</Text>
+        <View style={styles.historySection}>
+          <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>
+            Historial Clínico
+          </Text>
           {logs.length === 0 ? (
-            <View style={styles.historyEmptyCard}>
+            <View style={[styles.historyEmptyCard, { marginHorizontal: 20 }]}>
               <Text style={styles.historyEmptyEmoji}>📝</Text>
               <Text style={styles.historyEmptyTitle}>
                 No hay consultas previas
@@ -236,74 +238,79 @@ export const PotDetailScreen = ({
               </Text>
             </View>
           ) : (
-            logs.map((log) => (
-              <View key={log.id} style={styles.logCard}>
-                <View style={styles.logHeader}>
-                  <Text style={styles.logDate}>
-                    {new Date(log.created_at).toLocaleDateString('es-AR', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </Text>
-                  <View
-                    style={[
-                      styles.urgencyBadge,
-                      log.urgency === 'high'
-                        ? styles.urgencyHigh
-                        : log.urgency === 'medium'
-                          ? styles.urgencyMedium
-                          : styles.urgencyLow,
-                    ]}
-                  >
-                    <Text
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.historyScrollContent}
+              decelerationRate='fast'
+              snapToInterval={296} // 280 width + 16 gap
+            >
+              {logs.map((log) => (
+                <View key={log.id} style={styles.logCard}>
+                  <View style={styles.logHeader}>
+                    <Text style={styles.logDate}>
+                      {new Date(log.created_at).toLocaleDateString('es-AR', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </Text>
+                    <View
                       style={[
-                        styles.urgencyText,
-                        log.urgency === 'high' ? styles.urgencyTextHigh : {},
+                        styles.urgencyBadge,
+                        log.urgency === 'high'
+                          ? styles.urgencyHigh
+                          : log.urgency === 'medium'
+                            ? styles.urgencyMedium
+                            : styles.urgencyLow,
                       ]}
                     >
-                      {log.urgency.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.logImagesRow}>
-                  {log.general_image_url &&
-                    log.general_image_url !== 'pending' && (
-                      <Image
-                        source={{ uri: log.general_image_url }}
+                      <Text
                         style={[
-                          styles.logImage,
-                          log.soil_image_url
-                            ? { flex: 1, marginRight: 8 }
-                            : { width: '100%' },
+                          styles.urgencyText,
+                          log.urgency === 'high' ? styles.urgencyTextHigh : {},
                         ]}
+                      >
+                        {log.urgency.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.logImagesRow}>
+                    {log.general_image_url &&
+                      log.general_image_url !== 'pending' && (
+                        <Image
+                          source={{ uri: log.general_image_url }}
+                          style={[
+                            styles.logImage,
+                            log.soil_image_url &&
+                            log.soil_image_url !== 'pending'
+                              ? { flex: 1, marginRight: 8 }
+                              : { width: '100%' },
+                          ]}
+                        />
+                      )}
+                    {log.soil_image_url && log.soil_image_url !== 'pending' && (
+                      <Image
+                        source={{ uri: log.soil_image_url }}
+                        style={[styles.logImage, { flex: 1 }]}
                       />
                     )}
-                  {log.soil_image_url && log.soil_image_url !== 'pending' && (
-                    <Image
-                      source={{ uri: log.soil_image_url }}
-                      style={[styles.logImage, { flex: 1 }]}
-                    />
+                  </View>
+
+                  <Text style={styles.logDiagnosis} numberOfLines={4}>
+                    {log.ai_diagnosis}
+                  </Text>
+
+                  {log.action_plan && log.action_plan.length > 0 && (
+                    <View style={styles.actionPlanTag}>
+                      <Text style={styles.actionPlanTagText}>
+                        📋 Hay un plan de acción sugerido
+                      </Text>
+                    </View>
                   )}
                 </View>
-
-                {log.user_query && (
-                  <Text style={styles.logQuery}>"{log.user_query}"</Text>
-                )}
-                <Text style={styles.logDiagnosis}>{log.ai_diagnosis}</Text>
-
-                {log.action_plan && log.action_plan.length > 0 && (
-                  <View style={styles.actionPlanContainer}>
-                    <Text style={styles.actionPlanTitle}>Plan de Acción:</Text>
-                    {log.action_plan.map((step, idx) => (
-                      <Text key={idx} style={styles.actionPlanStep}>
-                        • {step}
-                      </Text>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))
+              ))}
+            </ScrollView>
           )}
         </View>
 
@@ -514,6 +521,13 @@ const styles = StyleSheet.create({
   },
 
   // ── History Empty ──
+  historySection: {
+    marginBottom: 28,
+  },
+  historyScrollContent: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
   historyEmptyCard: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -542,17 +556,17 @@ const styles = StyleSheet.create({
 
   // ── Log Cards ──
   logCard: {
+    width: 280,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
   },
   logHeader: {
     flexDirection: 'row',
@@ -562,12 +576,12 @@ const styles = StyleSheet.create({
   },
   logDate: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1B4332',
   },
   urgencyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   urgencyHigh: {
@@ -582,47 +596,36 @@ const styles = StyleSheet.create({
   urgencyText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#555',
+    color: '#333',
   },
   urgencyTextHigh: {
     color: '#B71C1C',
   },
   logImagesRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   logImage: {
-    height: 180,
-    borderRadius: 12,
-  },
-  logQuery: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    color: '#555',
-    marginBottom: 8,
+    height: 110,
+    borderRadius: 14,
   },
   logDiagnosis: {
-    fontSize: 15,
-    color: '#333',
+    fontSize: 14,
+    color: '#444',
     lineHeight: 22,
     marginBottom: 12,
   },
-  actionPlanContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 12,
-    borderRadius: 12,
+  actionPlanTag: {
+    backgroundColor: '#f1f8f5',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
-  actionPlanTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1B4332',
-    marginBottom: 8,
-  },
-  actionPlanStep: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 4,
-    lineHeight: 20,
+  actionPlanTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2D6A4F',
   },
 
   // ── Danger Zone ──
