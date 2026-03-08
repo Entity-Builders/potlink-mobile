@@ -12,8 +12,8 @@ import { DiagnosisDetailScreen } from './src/screens/DiagnosisDetailScreen';
 import { NotificationService } from './src/services/NotificationService';
 import { analytics, initAnalytics } from './src/services/analyticsService';
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
-import { AppNavigator } from './src/navigation/AppNavigator';
-import type { HomeNavAction } from './src/navigation/AppNavigator';
+import { ARPotRegistrationScreen } from './src/screens/ARPotRegistrationScreen';
+import { PotsListScreen } from './src/screens/PotsListScreen';
 
 initAnalytics();
 
@@ -22,7 +22,8 @@ type ModalScreen =
   | 'detail'
   | 'edit'
   | 'care-settings'
-  | 'diagnosis-detail';
+  | 'diagnosis-detail'
+  | 'add-pot';
 interface ModalState {
   screen: ModalScreen;
   pot?: Pot;
@@ -116,8 +117,8 @@ export default function App() {
       );
   }, []);
 
-  // Navigate to detail/edit/care-settings from within navigator
-  const handleNavAction = (action: HomeNavAction) => {
+  // Ensure modal state tracks navigation intent
+  const handleNavAction = (action: any) => {
     if (action.type === 'OPEN_DETAIL')
       setModal({ screen: 'detail', pot: action.pot });
     if (action.type === 'OPEN_EDIT')
@@ -175,6 +176,14 @@ export default function App() {
           />
         ) : null;
 
+      case 'add-pot':
+        return (
+          <ARPotRegistrationScreen
+            onSuccess={() => setModal({ screen: 'none' })}
+            onCancel={() => setModal({ screen: 'none' })}
+          />
+        );
+
       default:
         return null;
     }
@@ -195,10 +204,11 @@ export default function App() {
         {modal.screen !== 'none' ? (
           renderModal()
         ) : (
-          <AppNavigator
+          <PotsListScreen
             session={session}
             onLogout={() => setSession(null)}
-            onNavigateTo={handleNavAction}
+            onPotPress={(pot) => setModal({ screen: 'detail', pot })}
+            onAddPress={() => setModal({ screen: 'add-pot' })}
           />
         )}
         <StatusBar style='light' />

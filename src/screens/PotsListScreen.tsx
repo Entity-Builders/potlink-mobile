@@ -36,6 +36,7 @@ interface PotsListScreenProps {
   onPotPress: (pot: Pot) => void;
   onLogout: () => void;
   onCameraPress?: () => void;
+  onAddPress?: () => void;
   /** When true, shows a full plant collection list view instead of the home layout */
   collectionMode?: boolean;
 }
@@ -47,6 +48,7 @@ export const PotsListScreen = ({
   onPotPress,
   onLogout,
   onCameraPress,
+  onAddPress,
   collectionMode = false,
 }: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
@@ -95,7 +97,7 @@ export const PotsListScreen = ({
   if (collectionMode) {
     return (
       <LinearGradient colors={['#1B4332', '#2D6A4F']} style={styles.flex}>
-        <SafeAreaView style={styles.flex}>
+        <SafeAreaView style={styles.flex} edges={['top', 'left', 'right']}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Mis plantas</Text>
             <Text style={styles.potCount}>{pots.length} registradas</Text>
@@ -131,6 +133,20 @@ export const PotsListScreen = ({
               </TouchableOpacity>
             )}
           />
+          {onAddPress && (
+            <View style={styles.fabContainer}>
+              <TouchableOpacity
+                style={styles.fabButton}
+                onPress={() => {
+                  analytics.track('fab_add_pressed');
+                  onAddPress();
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.fabText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </SafeAreaView>
       </LinearGradient>
     );
@@ -140,7 +156,7 @@ export const PotsListScreen = ({
 
   return (
     <LinearGradient colors={['#1B4332', '#2D6A4F']} style={styles.flex}>
-      <SafeAreaView style={styles.flex}>
+      <SafeAreaView style={styles.flex} edges={['top', 'left', 'right']}>
         {/* ── Top Bar ── */}
         <View style={styles.topBar}>
           <View style={styles.topBarBrand}>
@@ -212,6 +228,20 @@ export const PotsListScreen = ({
             </View>
           )}
         </ScrollView>
+        {onAddPress && (
+          <View style={styles.fabContainer}>
+            <TouchableOpacity
+              style={styles.fabButton}
+              onPress={() => {
+                analytics.track('fab_add_pressed');
+                onAddPress();
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.fabText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -319,7 +349,7 @@ const styles = StyleSheet.create({
 
   // ── Scroll
   scroll: {
-    paddingBottom: 110, // space for floating tab bar
+    paddingBottom: 40,
     gap: 20,
   },
 
@@ -462,7 +492,7 @@ const styles = StyleSheet.create({
   // ── Collection Mode
   collectionList: {
     paddingHorizontal: 16,
-    paddingBottom: 110,
+    paddingBottom: 40,
     gap: 10,
   },
   collectionRow: {
@@ -518,5 +548,32 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     lineHeight: 22,
+  },
+
+  // ── FAB
+  fabContainer: {
+    position: 'absolute',
+    bottom: 32,
+    alignSelf: 'center',
+    zIndex: 100,
+  },
+  fabButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#316E50',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  fabText: {
+    fontSize: 36,
+    color: '#1B4332',
+    fontWeight: '400',
+    marginTop: -4,
   },
 });
