@@ -53,6 +53,7 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
   const [resultLog, setResultLog] = useState<PotDiagnosisLog | null>(null);
   const [chatMessage, setChatMessage] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const [isChatActive, setIsChatActive] = useState(false);
   const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Reset state when opened
@@ -65,6 +66,7 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
       setMessageIndex(0);
       setChatMessage('');
       setIsSendingChat(false);
+      setIsChatActive(false);
     }
   }, [visible]);
 
@@ -272,70 +274,100 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
 
           <View style={styles.chatDivider} />
 
-          {/* Follow up chat history */}
-          {resultLog.chat_history?.map((msg, idx) => (
-            <View
-              key={idx}
-              style={[
-                styles.chatBubble,
-                msg.role === 'user'
-                  ? styles.userBubble
-                  : styles.assistantBubble,
-              ]}
-            >
-              <Text style={styles.doctorName}>
-                {msg.role === 'user' ? '👤 Vos' : '👨‍⚕️ Plant Doctor'}
-              </Text>
-              <Text
-                style={[
-                  styles.chatText,
-                  msg.role === 'user' && styles.userChatText,
-                ]}
+          {/* Chat Interface / Buttons depending on isChatActive */}
+          {!isChatActive ? (
+            <View style={styles.initialButtonsContainer}>
+              <TouchableOpacity
+                style={styles.chatToggleButton}
+                onPress={() => setIsChatActive(true)}
               >
-                {msg.content}
-              </Text>
-            </View>
-          ))}
+                <Text style={styles.chatToggleButtonText}>
+                  Consultar sobre el diagnóstico
+                </Text>
+              </TouchableOpacity>
 
-          {isSendingChat && (
-            <View
-              style={[
-                styles.chatBubble,
-                styles.assistantBubble,
-                styles.loadingBubble,
-              ]}
-            >
-              <ActivityIndicator size='small' color='#2D6A4F' />
-              <Text style={styles.loadingBubbleText}>Escribiendo...</Text>
+              <TouchableOpacity
+                style={styles.closeResultButton}
+                onPress={onClose}
+              >
+                <Text style={styles.closeResultText}>Ok, entiendo</Text>
+              </TouchableOpacity>
             </View>
+          ) : (
+            <>
+              {/* Follow up chat history */}
+              {resultLog.chat_history?.map((msg, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.chatBubble,
+                    msg.role === 'user'
+                      ? styles.userBubble
+                      : styles.assistantBubble,
+                  ]}
+                >
+                  <Text style={styles.doctorName}>
+                    {msg.role === 'user' ? 'Vos' : '👨‍⚕️ Plant Doctor'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.chatText,
+                      msg.role === 'user' && styles.userChatText,
+                    ]}
+                  >
+                    {msg.content}
+                  </Text>
+                </View>
+              ))}
+
+              {isSendingChat && (
+                <View
+                  style={[
+                    styles.chatBubble,
+                    styles.assistantBubble,
+                    styles.loadingBubble,
+                  ]}
+                >
+                  <ActivityIndicator size='small' color='#2D6A4F' />
+                  <Text style={styles.loadingBubbleText}>Escribiendo...</Text>
+                </View>
+              )}
+
+              <View style={{ height: 20 }} />
+            </>
           )}
-
-          <View style={{ height: 20 }} />
         </ScrollView>
 
-        <View style={styles.chatInputContainer}>
-          <TextInput
-            style={styles.chatInput}
-            placeholder='Preguntale al doctor...'
-            placeholderTextColor='#999'
-            value={chatMessage}
-            onChangeText={setChatMessage}
-            multiline
-            maxLength={300}
-            editable={!isSendingChat}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!chatMessage.trim() || isSendingChat) &&
-                styles.sendButtonDisabled,
-            ]}
-            onPress={handleSendChat}
-            disabled={!chatMessage.trim() || isSendingChat}
-          >
-            <Text style={styles.sendButtonText}>Enviar</Text>
-          </TouchableOpacity>
-        </View>
+        {isChatActive && (
+          <View>
+            <View style={styles.chatInputContainer}>
+              <TextInput
+                style={styles.chatInput}
+                placeholder='Preguntale al doctor...'
+                placeholderTextColor='#999'
+                value={chatMessage}
+                onChangeText={setChatMessage}
+                multiline
+                maxLength={300}
+                editable={!isSendingChat}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (!chatMessage.trim() || isSendingChat) &&
+                    styles.sendButtonDisabled,
+                ]}
+                onPress={handleSendChat}
+                disabled={!chatMessage.trim() || isSendingChat}
+              >
+                <Text style={styles.sendButtonText}>Enviar</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeChatButton} onPress={onClose}>
+              <Text style={styles.closeChatText}>Finalizar Consulta</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -653,5 +685,31 @@ const styles = StyleSheet.create({
     color: '#2D6A4F',
     fontWeight: '600',
     fontSize: 14,
+  },
+  initialButtonsContainer: {
+    gap: 12,
+  },
+  chatToggleButton: {
+    width: '100%',
+    backgroundColor: '#1B4332',
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  chatToggleButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  closeChatButton: {
+    width: '100%',
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  closeChatText: {
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
