@@ -9,14 +9,20 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { getUserPots } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 import type { Session } from '@supabase/supabase-js';
 import { analytics } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
+import { QuickPlantSelector } from '../components/QuickPlantSelector';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +41,7 @@ interface PotsListScreenProps {
   session: Session | null;
   onPotPress: (pot: Pot) => void;
   onLogout: () => void;
-  onCameraPress?: () => void;
+  onCameraPress?: (pot?: Pot) => void;
   onAddPress?: () => void;
   /** When true, shows a full plant collection list view instead of the home layout */
   collectionMode?: boolean;
@@ -53,6 +59,11 @@ export const PotsListScreen = ({
 }: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [showPlantSelector, setShowPlantSelector] = useState(false);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(300)).current;
+  const insets = useSafeAreaInsets();
 
   useScreenLogger('PotsListScreen');
 
@@ -91,6 +102,155 @@ export const PotsListScreen = ({
       </LinearGradient>
     );
   }
+
+  const toggleActionSheet = (visible: boolean) => {
+    if (visible) {
+      setShowActionSheet(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowActionSheet(false));
+    }
+  };
+
+  const renderActionSheet = () => (
+    <Modal
+      visible={showActionSheet}
+      transparent
+      animationType='none'
+      onRequestClose={() => toggleActionSheet(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={() => toggleActionSheet(false)}
+        >
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: 'rgba(0,0,0,0.5)', opacity: fadeAnim },
+            ]}
+          />
+        </TouchableOpacity>
+
+        <Animated.View
+          style={[
+            styles.actionSheet,
+            {
+              transform: [{ translateY: slideAnim }],
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+        >
+          <View style={styles.sheetHandleWrap}>
+            <View style={styles.sheetHandle} />
+          </View>
+
+          <Text style={styles.sheetTitle}>¿Qué necesitas hacer?</Text>
+
+          <TouchableOpacity
+            style={styles.sheetAction}
+            activeOpacity={0.7}
+            onPress={() => {
+              toggleActionSheet(false);
+              setTimeout(() => {
+                if (onAddPress) onAddPress();
+              }, 300);
+            }}
+          >
+            <View
+              style={[styles.sheetIconWrap, { backgroundColor: '#e8f5e9' }]}
+            >
+              <Text style={styles.sheetIcon}>🪴</Text>
+            </View>
+            <View>
+              <Text style={styles.sheetActionTitle}>
+                Registrar Nueva Planta
+              </Text>
+              <Text style={styles.sheetActionDesc}>
+                Agregar una maceta a tu jardín
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.sheetAction}
+            activeOpacity={0.7}
+            onPress={() => {
+              toggleActionSheet(false);
+              setTimeout(() => {
+                // If they have no pots, they need to add one first
+                if (pots.length === 0) {
+                  alert(
+                    'Primero necesitas registrar una planta para poder diagnosticarla.',
+                  );
+                  if (onAddPress) onAddPress();
+                  return;
+                }
+                setShowPlantSelector(true);
+              }, 300);
+            }}
+          >
+            <View
+              style={[styles.sheetIconWrap, { backgroundColor: '#ffebee' }]}
+            >
+              <Text style={styles.sheetIcon}>🚑</Text>
+            </View>
+            <View>
+              <Text style={styles.sheetActionTitle}>
+                Consulta Médica Rápida
+              </Text>
+              <Text style={styles.sheetActionDesc}>
+                Sacá una foto para analizarla
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+
+  // ── Modals & Overlays ──────────────────────────────────────────────────────
+
+  const renderOverlays = () => (
+    <>
+      {renderActionSheet()}
+      <QuickPlantSelector
+        visible={showPlantSelector}
+        pots={pots}
+        onClose={() => setShowPlantSelector(false)}
+        onSelect={(pot) => {
+          setShowPlantSelector(false);
+          // Small delay so the modal can close smoothly before opening the camera
+          setTimeout(() => {
+            if (onCameraPress) onCameraPress(pot);
+          }, 300);
+        }}
+      />
+    </>
+  );
 
   // ── Collection mode (Mis plantas tab) ──────────────────────────────────────
 
@@ -137,16 +297,14 @@ export const PotsListScreen = ({
             <View style={styles.fabContainer}>
               <TouchableOpacity
                 style={styles.fabButton}
-                onPress={() => {
-                  analytics.track('fab_add_pressed');
-                  onAddPress();
-                }}
+                onPress={() => toggleActionSheet(true)}
                 activeOpacity={0.85}
               >
                 <Text style={styles.fabText}>+</Text>
               </TouchableOpacity>
             </View>
           )}
+          {renderOverlays()}
         </SafeAreaView>
       </LinearGradient>
     );
@@ -183,7 +341,16 @@ export const PotsListScreen = ({
           {/* ── Camera Hero CTA (El Doctor) ── */}
           <TouchableOpacity
             style={styles.cameraHero}
-            onPress={onCameraPress}
+            onPress={() => {
+              if (pots.length === 0) {
+                alert(
+                  'Primero necesitas registrar una planta para poder diagnosticarla.',
+                );
+                if (onAddPress) onAddPress();
+                return;
+              }
+              setShowPlantSelector(true);
+            }}
             activeOpacity={0.85}
           >
             <LinearGradient
@@ -232,16 +399,14 @@ export const PotsListScreen = ({
           <View style={styles.fabContainer}>
             <TouchableOpacity
               style={styles.fabButton}
-              onPress={() => {
-                analytics.track('fab_add_pressed');
-                onAddPress();
-              }}
+              onPress={() => toggleActionSheet(true)}
               activeOpacity={0.85}
             >
               <Text style={styles.fabText}>+</Text>
             </TouchableOpacity>
           </View>
         )}
+        {renderOverlays()}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -575,5 +740,67 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '400',
     marginTop: -4,
+  },
+
+  // ── Action Sheet Modal
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  actionSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  sheetHandleWrap: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 3,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1B4332',
+    marginBottom: 24,
+  },
+  sheetAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    gap: 16,
+  },
+  sheetIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetIcon: {
+    fontSize: 24,
+  },
+  sheetActionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D3748',
+    marginBottom: 4,
+  },
+  sheetActionDesc: {
+    fontSize: 13,
+    color: '#718096',
   },
 });

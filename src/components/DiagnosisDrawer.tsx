@@ -23,6 +23,7 @@ interface DiagnosisDrawerProps {
   pot: Pot;
   onClose: () => void;
   onSuccess: (log: PotDiagnosisLog) => void;
+  initialLog?: PotDiagnosisLog;
 }
 
 type DrawerState = 'IDLE' | 'ANALYZING' | 'RESULT';
@@ -39,6 +40,7 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
   pot,
   onClose,
   onSuccess,
+  initialLog,
 }) => {
   const [step, setStep] = useState<DrawerState>('IDLE');
 
@@ -59,16 +61,21 @@ export const DiagnosisDrawer: React.FC<DiagnosisDrawerProps> = ({
   // Reset state when opened
   useEffect(() => {
     if (visible) {
-      setStep('IDLE');
+      if (initialLog) {
+        setStep('RESULT');
+        setResultLog(initialLog);
+      } else {
+        setStep('IDLE');
+        setResultLog(null);
+      }
       setGeneralImage(null);
       setSoilImage(null);
-      setResultLog(null);
       setMessageIndex(0);
       setChatMessage('');
       setIsSendingChat(false);
       setIsChatActive(false);
     }
-  }, [visible]);
+  }, [visible, initialLog]);
 
   // Rotator for analyzing messages
   useEffect(() => {

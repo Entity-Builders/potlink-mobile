@@ -28,6 +28,7 @@ interface ModalState {
   screen: ModalScreen;
   pot?: Pot;
   log?: PotDiagnosisLog;
+  autoOpenDiagnosis?: boolean;
 }
 
 // ── Error Boundary Fallback ──────────────────────────────────────────────────
@@ -139,6 +140,7 @@ export default function App() {
         return modal.pot ? (
           <PotDetailScreen
             pot={modal.pot}
+            autoOpenDiagnosis={modal.autoOpenDiagnosis}
             onBack={() => setModal({ screen: 'none' })}
             onEdit={() => setModal({ screen: 'edit', pot: modal.pot })}
             onDeleted={() => setModal({ screen: 'none' })}
@@ -209,6 +211,11 @@ export default function App() {
             onLogout={() => setSession(null)}
             onPotPress={(pot) => setModal({ screen: 'detail', pot })}
             onAddPress={() => setModal({ screen: 'add-pot' })}
+            onCameraPress={(pot) => {
+              if (pot) {
+                setModal({ screen: 'detail', pot, autoOpenDiagnosis: true });
+              }
+            }}
           />
         )}
         <StatusBar style='light' />

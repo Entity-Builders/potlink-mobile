@@ -36,15 +36,16 @@ import { DiagnosisDrawer } from '../components/DiagnosisDrawer';
 
 interface PotDetailScreenProps {
   pot: Pot;
+  autoOpenDiagnosis?: boolean;
   onBack: () => void;
   onEdit: () => void;
   onDeleted: () => void;
   onDiagnosisPress?: (log: PotDiagnosisLog) => void;
-  // Note: onCareSettings is removed as we dropped manual schedules
 }
 
 export const PotDetailScreen = ({
   pot,
+  autoOpenDiagnosis,
   onBack,
   onEdit,
   onDeleted,
@@ -54,7 +55,7 @@ export const PotDetailScreen = ({
     null,
   );
   const [logs, setLogs] = React.useState<PotDiagnosisLog[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(!!autoOpenDiagnosis);
 
   useScreenLogger('PotDetailScreen');
 
