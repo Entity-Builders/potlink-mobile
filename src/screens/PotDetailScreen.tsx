@@ -39,6 +39,7 @@ interface PotDetailScreenProps {
   onBack: () => void;
   onEdit: () => void;
   onDeleted: () => void;
+  onDiagnosisPress?: (log: PotDiagnosisLog) => void;
   // Note: onCareSettings is removed as we dropped manual schedules
 }
 
@@ -47,6 +48,7 @@ export const PotDetailScreen = ({
   onBack,
   onEdit,
   onDeleted,
+  onDiagnosisPress,
 }: PotDetailScreenProps) => {
   const [careGuide, setCareGuide] = React.useState<SpeciesCareGuide | null>(
     null,
@@ -189,8 +191,28 @@ export const PotDetailScreen = ({
 
         {/* ── Tablero Médico (Bento Box) ── */}
         {logs.length > 0 && logs[0].metadata && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Tablero Médico</Text>
+          <TouchableOpacity
+            style={styles.section}
+            activeOpacity={0.9}
+            onPress={() => onDiagnosisPress && onDiagnosisPress(logs[0])}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}
+            >
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+                Tablero Médico
+              </Text>
+              <Text
+                style={{ color: '#2e7d32', fontWeight: '600', fontSize: 13 }}
+              >
+                Ver detalle {'>'}
+              </Text>
+            </View>
 
             <View style={styles.bentoGrid}>
               {/* Fila 1: Suelo y Vitalidad */}
@@ -325,7 +347,7 @@ export const PotDetailScreen = ({
                 </View>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* ── Reglas de Oro (Basic Care) ── */}
@@ -393,7 +415,12 @@ export const PotDetailScreen = ({
               snapToInterval={296} // 280 width + 16 gap
             >
               {logs.map((log) => (
-                <View key={log.id} style={styles.logCard}>
+                <TouchableOpacity
+                  key={log.id}
+                  style={styles.logCard}
+                  activeOpacity={0.8}
+                  onPress={() => onDiagnosisPress && onDiagnosisPress(log)}
+                >
                   <View style={styles.logHeader}>
                     <Text style={styles.logDate}>
                       {new Date(log.created_at).toLocaleDateString('es-AR', {
@@ -455,7 +482,7 @@ export const PotDetailScreen = ({
                       </Text>
                     </View>
                   )}
-                </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           )}

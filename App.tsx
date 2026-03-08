@@ -7,7 +7,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
-import type { Pot } from '@eb-packages/garden';
+import type { Pot, PotDiagnosisLog } from '@eb-packages/garden';
+import { DiagnosisDetailScreen } from './src/screens/DiagnosisDetailScreen';
 import { NotificationService } from './src/services/NotificationService';
 import { analytics, initAnalytics } from './src/services/analyticsService';
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
@@ -16,10 +17,16 @@ import type { HomeNavAction } from './src/navigation/AppNavigator';
 
 initAnalytics();
 
-type ModalScreen = 'none' | 'detail' | 'edit' | 'care-settings';
+type ModalScreen =
+  | 'none'
+  | 'detail'
+  | 'edit'
+  | 'care-settings'
+  | 'diagnosis-detail';
 interface ModalState {
   screen: ModalScreen;
   pot?: Pot;
+  log?: PotDiagnosisLog;
 }
 
 // ── Error Boundary Fallback ──────────────────────────────────────────────────
@@ -117,6 +124,12 @@ export default function App() {
       setModal({ screen: 'edit', pot: action.pot });
     if (action.type === 'OPEN_CARE_SETTINGS')
       setModal({ screen: 'care-settings', pot: action.pot });
+    if (action.type === 'OPEN_DIAGNOSIS_DETAIL')
+      setModal({
+        screen: 'diagnosis-detail',
+        pot: action.pot,
+        log: action.log,
+      });
   };
 
   const renderModal = () => {
@@ -128,6 +141,9 @@ export default function App() {
             onBack={() => setModal({ screen: 'none' })}
             onEdit={() => setModal({ screen: 'edit', pot: modal.pot })}
             onDeleted={() => setModal({ screen: 'none' })}
+            onDiagnosisPress={(log: PotDiagnosisLog) =>
+              setModal({ screen: 'diagnosis-detail', pot: modal.pot, log })
+            }
           />
         ) : null;
 
@@ -146,6 +162,15 @@ export default function App() {
         return modal.pot ? (
           <CareSettingsScreen
             pot={modal.pot}
+            onBack={() => setModal({ screen: 'detail', pot: modal.pot })}
+          />
+        ) : null;
+
+      case 'diagnosis-detail':
+        return modal.pot && modal.log ? (
+          <DiagnosisDetailScreen
+            pot={modal.pot}
+            log={modal.log}
             onBack={() => setModal({ screen: 'detail', pot: modal.pot })}
           />
         ) : null;

@@ -8,22 +8,22 @@ import {
   Alert,
 } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
-import type { Pot } from '@eb-packages/garden';
+import type { Pot, PotDiagnosisLog } from '@eb-packages/garden';
 
 // Screens
 import { PotsListScreen } from '../screens/PotsListScreen';
-import { CareCalendarScreen } from '../screens/CareCalendarScreen';
 import { ARPotRegistrationScreen } from '../screens/ARPotRegistrationScreen';
 import { analytics } from '../services/analyticsService';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type TabId = 'home' | 'calendar' | 'add' | 'plants';
+type TabId = 'home' | 'add' | 'plants';
 
 export type HomeNavAction =
   | { type: 'OPEN_DETAIL'; pot: Pot }
   | { type: 'OPEN_EDIT'; pot: Pot }
-  | { type: 'OPEN_CARE_SETTINGS'; pot: Pot };
+  | { type: 'OPEN_CARE_SETTINGS'; pot: Pot }
+  | { type: 'OPEN_DIAGNOSIS_DETAIL'; pot: Pot; log: PotDiagnosisLog };
 
 interface TabConfig {
   id: TabId;
@@ -34,7 +34,6 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   { id: 'home', label: 'Inicio', icon: '🏠' },
-  { id: 'calendar', label: 'Calendario', icon: '📅' },
   { id: 'add', label: 'Agregar', icon: '➕', isFab: true },
   { id: 'plants', label: 'Mis plantas', icon: '🌱' },
 ];
@@ -56,17 +55,18 @@ function TabBar({
 
           if (tab.isFab) {
             return (
-              <TouchableOpacity
-                key={tab.id}
-                style={styles.fabButton}
-                onPress={() => {
-                  analytics.track('tab_pressed', { tab: tab.id });
-                  onTabPress(tab.id);
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.fabIcon}>{tab.icon}</Text>
-              </TouchableOpacity>
+              <View key={tab.id} style={styles.fabContainer}>
+                <TouchableOpacity
+                  style={styles.fabButton}
+                  onPress={() => {
+                    analytics.track('tab_pressed', { tab: tab.id });
+                    onTabPress(tab.id);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.fabText}>+</Text>
+                </TouchableOpacity>
+              </View>
             );
           }
 
@@ -127,8 +127,6 @@ export function AppNavigator({
             }
           />
         );
-      case 'calendar':
-        return <CareCalendarScreen />;
       case 'add':
         return (
           <ARPotRegistrationScreen
@@ -164,43 +162,41 @@ const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 90, // Ensure content isn't hidden behind the floating tab bar
   },
   tabBarContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 28 : 16,
+    bottom: Platform.OS === 'ios' ? 32 : 24,
     left: 20,
     right: 20,
-    alignItems: 'center',
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 32,
+    borderRadius: 40,
     paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingVertical: 14,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
     shadowRadius: 20,
-    elevation: 12,
-    gap: 4,
+    elevation: 8,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
-    gap: 2,
+    gap: 4,
   },
   tabIcon: {
-    fontSize: 20,
+    fontSize: 22,
     opacity: 0.4,
   },
   tabIconActive: {
     opacity: 1,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#999',
     fontWeight: '500',
   },
@@ -208,21 +204,31 @@ const styles = StyleSheet.create({
     color: '#1B4332',
     fontWeight: '700',
   },
+  fabContainer: {
+    flex: 1,
+    alignItems: 'center',
+    position: 'relative',
+    height: 48,
+  },
   fabButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#2D6A4F',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#316E50',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
-    shadowColor: '#2D6A4F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    position: 'absolute',
+    top: -28,
+    shadowColor: '#316E50',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
     elevation: 8,
   },
-  fabIcon: {
-    fontSize: 22,
+  fabText: {
+    fontSize: 36,
+    color: '#1B4332',
+    fontWeight: '400',
+    marginTop: -4,
   },
 });
