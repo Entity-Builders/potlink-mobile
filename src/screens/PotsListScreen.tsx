@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
     bottom: 32,
-    alignSelf: 'center',
+    right: 24,
     zIndex: 100,
   },
   fabButton: {
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 36,
-    color: '#1B4332',
+    color: '#FFFFFF',
     fontWeight: '400',
     marginTop: -4,
   },
