@@ -1,3 +1,20 @@
+---
+name: 'Potlink'
+tagline: 'Your garden, organized. One plant at a time.'
+platform: 'iOS / Android'
+status: 'active'
+category: 'lifestyle'
+icon: '🌱'
+features:
+  - 'Camera-based plant registration with AI identification'
+  - 'Automatic species and variety detection'
+  - 'Care routine management (water, fertilize, prune, repot)'
+  - 'Daily care priority view'
+  - 'Photo and profile for each plant'
+downloadUrl: ''
+visible: true
+---
+
 # 🌱 Potlink Mobile
 
 > **Your garden, organized. One plant at a time.**
