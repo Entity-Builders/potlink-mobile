@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,13 @@ import {
 } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Session } from '@supabase/supabase-js';
-import { supabase, generateShareCode, linkAccount } from '@eb-packages/logic';
+import {
+  supabase,
+  generateShareCode,
+  linkAccount,
+  getLinkedAccounts,
+  LinkedAccount,
+} from '@eb-packages/logic';
 import { analytics } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 
@@ -38,6 +44,22 @@ export const ProfileScreen = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [inputCode, setInputCode] = useState('');
   const [isLinking, setIsLinking] = useState(false);
+
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
+
+  useEffect(() => {
+    const fetchLinks = async () => {
+      setIsLoadingLinks(true);
+      const links = await getLinkedAccounts();
+      setLinkedAccounts(links);
+      setIsLoadingLinks(false);
+    };
+
+    if (session?.user) {
+      fetchLinks();
+    }
+  }, [session]);
 
   const handleGenerateCode = async () => {
     setIsGenerating(true);
@@ -73,6 +95,9 @@ export const ProfileScreen = ({
         'Cuenta vinculada correctamente. Ahora pueden ver sus plantas mutuas.',
       );
       setInputCode('');
+      // Refresh the linked accounts list
+      const links = await getLinkedAccounts();
+      setLinkedAccounts(links);
     } else {
       Alert.alert('Error', result.error || 'No se pudo vincular la cuenta.');
     }
@@ -172,9 +197,75 @@ export const ProfileScreen = ({
 
           {/* Linked Accounts Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Familia / Compartir</Text>
+            <Text style={styles.sectionTitle}>Compartir</Text>
 
             <View style={styles.card}>
+              {linkedAccounts.length > 0 && (
+                <>
+                  <View style={styles.cardPadding}>
+                    <Text style={styles.cardRowTitle}>Cuentas Vinculadas</Text>
+                    {linkedAccounts.map((account) => (
+                      <View
+                        key={account.linked_user_id}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          marginTop: 12,
+                        }}
+                      >
+                        <View
+                          style={[
+                            styles.avatarCircle,
+                            {
+                              width: 40,
+                              height: 40,
+                              marginBottom: 0,
+                              marginRight: 12,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              color: '#FFF',
+                              fontWeight: '800',
+                            }}
+                          >
+                            {account.name
+                              ? account.name.charAt(0).toUpperCase()
+                              : account.email?.charAt(0).toUpperCase() || '?'}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text
+                            style={{
+                              color: '#FFF',
+                              fontSize: 15,
+                              fontWeight: '600',
+                            }}
+                          >
+                            {account.name ||
+                              account.email?.split('@')[0] ||
+                              'Usuario'}
+                          </Text>
+                          {account.email && (
+                            <Text
+                              style={{
+                                color: 'rgba(255,255,255,0.5)',
+                                fontSize: 13,
+                              }}
+                            >
+                              {account.email}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={styles.divider} />
+                </>
+              )}
+
               <View style={styles.cardPadding}>
                 <Text style={styles.cardRowTitle}>Generar Invitación</Text>
                 <Text style={styles.cardRowSubtitle}>

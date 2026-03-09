@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { getUserPots } from '@eb-packages/logic';
+import { getUserPots, getLinkedAccounts } from '@eb-packages/logic';
 import type { Pot } from '@eb-packages/garden';
 import type { Session } from '@supabase/supabase-js';
 import { analytics } from '../services/analyticsService';
@@ -59,6 +60,7 @@ export const PotsListScreen = ({
 }: PotsListScreenProps) => {
   const [pots, setPots] = useState<Pot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLinkedAccounts, setHasLinkedAccounts] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [showPlantSelector, setShowPlantSelector] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -75,8 +77,12 @@ export const PotsListScreen = ({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const userPots = await getUserPots();
+      const [userPots, links] = await Promise.all([
+        getUserPots(),
+        getLinkedAccounts(),
+      ]);
       setPots(userPots);
+      setHasLinkedAccounts(links.length > 0);
     } catch (error) {
       analytics.captureError(error, {
         screen: 'PotsListScreen',
@@ -259,7 +265,9 @@ export const PotsListScreen = ({
       <LinearGradient colors={['#1B4332', '#2D6A4F']} style={styles.flex}>
         <SafeAreaView style={styles.flex} edges={['top', 'left', 'right']}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Mis plantas</Text>
+            <Text style={styles.sectionTitle}>
+              {hasLinkedAccounts ? 'Nuestras plantas' : 'Mis plantas'}
+            </Text>
             <Text style={styles.potCount}>{pots.length} registradas</Text>
           </View>
           <FlatList
@@ -384,7 +392,8 @@ export const PotsListScreen = ({
           {/* ── Mis plantas (Agenda Visual) ── */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>
-              Tus Plantas{pots.length > 0 ? ` (${pots.length})` : ''}
+              {hasLinkedAccounts ? 'Nuestras Plantas' : 'Tus Plantas'}
+              {pots.length > 0 ? ` (${pots.length})` : ''}
             </Text>
           </View>
 
