@@ -20,6 +20,7 @@ import {
   supabase,
   generateShareCode,
   linkAccount,
+  unlinkAccount,
   getLinkedAccounts,
   LinkedAccount,
 } from '@eb-packages/logic';
@@ -101,6 +102,32 @@ export const ProfileScreen = ({
     } else {
       Alert.alert('Error', result.error || 'No se pudo vincular la cuenta.');
     }
+  };
+
+  const handleUnlinkAccount = (accountId: string, name: string) => {
+    Alert.alert(
+      'Desvincular cuenta',
+      `¿Estás seguro de que querés desvincular este jardín? Dejarás de ver sus plantas y su historial de cuidados inmediatamente.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Desvincular',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await unlinkAccount(accountId);
+            if (result.success) {
+              const links = await getLinkedAccounts();
+              setLinkedAccounts(links);
+            } else {
+              Alert.alert(
+                'Error',
+                result.error || 'No se pudo desvincular la cuenta.',
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
   const userName =
@@ -236,7 +263,7 @@ export const ProfileScreen = ({
                               : account.email?.charAt(0).toUpperCase() || '?'}
                           </Text>
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
                           <Text
                             style={{
                               color: '#FFF',
@@ -259,6 +286,20 @@ export const ProfileScreen = ({
                             </Text>
                           )}
                         </View>
+                        <TouchableOpacity
+                          style={styles.unlinkButton}
+                          onPress={() =>
+                            handleUnlinkAccount(
+                              account.linked_user_id,
+                              account.name || account.email || 'Usuario',
+                            )
+                          }
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.unlinkButtonText}>
+                            Desvincular
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                     ))}
                   </View>
@@ -588,5 +629,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+  },
+  unlinkButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+  },
+  unlinkButtonText: {
+    color: '#FF3B30',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
