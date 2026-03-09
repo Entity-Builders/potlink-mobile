@@ -108,10 +108,16 @@ Or export them before running:
   );
   for (const dir of nativeDirs) {
     if (fs.existsSync(dir)) {
-      run(`npx @posthog/cli exp hermes upload --directory "${dir}"`, {
-        cwd: appDir,
-        env: uploadEnv,
-      });
+      try {
+        run(`npx @posthog/cli exp hermes upload --directory "${dir}"`, {
+          cwd: appDir,
+          env: uploadEnv,
+        });
+      } catch (error) {
+        console.warn(`\n⚠️  No se pudieron subir los source maps para ${dir}.`);
+        console.warn(`⚠️  Error detallado: ${error.message}`);
+        console.warn(`⚠️  Continuando de todos modos...`);
+      }
     }
   }
 
