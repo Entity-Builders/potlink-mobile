@@ -3,7 +3,7 @@ const { createAppConfig } = require('@eb-packages/expo-config');
 module.exports = createAppConfig({
   name: 'potlink',
   slug: 'potlink-mobile',
-  version: '1.0.12',
+  version: '1.0.13',
   projectId: '537ea184-1aa0-4198-9873-80eb9b3f6bb5',
 
   // Legacy bundle IDs — kept to avoid App Store Connect mismatch
