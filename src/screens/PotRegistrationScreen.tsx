@@ -26,6 +26,7 @@ import {
   trackPlantIdentified,
 } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
+import { compressImageForUpload } from '../utils/imageUtils';
 
 export const PotRegistrationScreen = ({
   onSuccess,
@@ -78,7 +79,11 @@ export const PotRegistrationScreen = ({
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
+      // Compress the image before setting it to state
+      const { uri: compressedUri } = await compressImageForUpload(
+        result.assets[0].uri,
+      );
+      setPhotoUri(compressedUri);
     }
   };
 
@@ -91,7 +96,11 @@ export const PotRegistrationScreen = ({
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
+      // Compress the image before setting it to state
+      const { uri: compressedUri } = await compressImageForUpload(
+        result.assets[0].uri,
+      );
+      setPhotoUri(compressedUri);
     }
   };
 

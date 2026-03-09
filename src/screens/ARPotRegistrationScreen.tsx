@@ -22,6 +22,7 @@ import {
   trackPlantIdentified,
 } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
+import { compressImageForUpload } from '../utils/imageUtils';
 
 interface CareInfo {
   climate?: string;
@@ -93,31 +94,43 @@ export const ARPotRegistrationScreen = ({
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        base64: true,
+        quality: 1, // We let imageManipulator handle the heavy compression
+        base64: false, // Don't block the UI thread generating huge base64 strings yet
       });
 
-      if (photo?.base64) {
-        setCapturedPhotoUri(photo.uri);
-        const result = await identifyPlant(photo.base64);
+      if (photo?.uri) {
+        // Compress the image before anything else
+        const { uri: compressedUri, base64 } = await compressImageForUpload(
+          photo.uri,
+          true,
+        );
 
-        if (result.species && result.species !== 'Desconocido') {
-          setIdentifiedData({
-            species: result.species,
-            variety: result.variety,
-            confidence: result.confidence,
-            description: result.description,
-          });
-          if (result.care_info) {
-            setCareInfo(result.care_info);
+        if (base64) {
+          setCapturedPhotoUri(compressedUri);
+          const result = await identifyPlant(base64);
+
+          if (result.species && result.species !== 'Desconocido') {
+            setIdentifiedData({
+              species: result.species,
+              variety: result.variety,
+              confidence: result.confidence,
+              description: result.description,
+            });
+            if (result.care_info) {
+              setCareInfo(result.care_info);
+            }
+            trackPlantIdentified(
+              result.species,
+              result.confidence,
+              'ar_camera',
+            );
+          } else {
+            Alert.alert(
+              'No Identificada',
+              'No se pudo identificar la planta. Intentá acercarte más o mejorar la iluminación.',
+            );
+            setCapturedPhotoUri(null);
           }
-          trackPlantIdentified(result.species, result.confidence, 'ar_camera');
-        } else {
-          Alert.alert(
-            'No Identificada',
-            'No se pudo identificar la planta. Intentá acercarte más o mejorar la iluminación.',
-          );
-          setCapturedPhotoUri(null);
         }
       }
     } catch (error) {

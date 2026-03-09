@@ -19,6 +19,7 @@ import { supabase } from '@eb-packages/logic';
 import { Screen } from '@eb-packages/ui';
 import { analytics, trackPotEdited } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
+import { compressImageForUpload } from '../utils/imageUtils';
 
 interface PotEditScreenProps {
   pot: Pot;
@@ -72,7 +73,10 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
+      const { uri: compressedUri } = await compressImageForUpload(
+        result.assets[0].uri,
+      );
+      setPhotoUri(compressedUri);
       setHasNewPhoto(true);
     }
   };
@@ -86,7 +90,10 @@ export const PotEditScreen = ({ pot, onBack, onSaved }: PotEditScreenProps) => {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
+      const { uri: compressedUri } = await compressImageForUpload(
+        result.assets[0].uri,
+      );
+      setPhotoUri(compressedUri);
       setHasNewPhoto(true);
     }
   };

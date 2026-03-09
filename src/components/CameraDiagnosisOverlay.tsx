@@ -11,6 +11,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ARGlassOverlay } from './ARGlassOverlay';
+import { compressImageForUpload } from '../utils/imageUtils';
 
 interface CameraDiagnosisOverlayProps {
   visible: boolean;
@@ -71,19 +72,24 @@ export const CameraDiagnosisOverlay: React.FC<CameraDiagnosisOverlayProps> = ({
     setIsCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        base64: true,
+        quality: 1,
+        base64: false,
       });
 
-      if (photo?.base64) {
-        const imageBase64 = `data:image/jpeg;base64,${photo.base64}`;
+      if (photo?.uri) {
+        // Compress the image and ask for base64 back
+        const { base64 } = await compressImageForUpload(photo.uri, true);
 
-        if (step === 'HOJAS') {
-          setGeneralImage(imageBase64);
-          setStep('TIERRA');
-        } else {
-          // Ya tenemos generalImage, ahora tomamos soil
-          onComplete(generalImage!, imageBase64);
+        if (base64) {
+          const imageBase64 = `data:image/jpeg;base64,${base64}`;
+
+          if (step === 'HOJAS') {
+            setGeneralImage(imageBase64);
+            setStep('TIERRA');
+          } else {
+            // Ya tenemos generalImage, ahora tomamos soil
+            onComplete(generalImage!, imageBase64);
+          }
         }
       }
     } catch (error) {
