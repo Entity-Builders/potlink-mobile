@@ -14,6 +14,7 @@ import { analytics, initAnalytics } from './src/services/analyticsService';
 import { CareSettingsScreen } from './src/screens/CareSettingsScreen';
 import { ARPotRegistrationScreen } from './src/screens/ARPotRegistrationScreen';
 import { PotsListScreen } from './src/screens/PotsListScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 
 initAnalytics();
 
@@ -23,7 +24,8 @@ type ModalScreen =
   | 'edit'
   | 'care-settings'
   | 'diagnosis-detail'
-  | 'add-pot';
+  | 'add-pot'
+  | 'profile';
 interface ModalState {
   screen: ModalScreen;
   pot?: Pot;
@@ -186,6 +188,18 @@ export default function App() {
           />
         );
 
+      case 'profile':
+        return (
+          <ProfileScreen
+            session={session}
+            onBack={() => setModal({ screen: 'none' })}
+            onLogout={() => {
+              setSession(null);
+              setModal({ screen: 'none' });
+            }}
+          />
+        );
+
       default:
         return null;
     }
@@ -208,7 +222,7 @@ export default function App() {
         ) : (
           <PotsListScreen
             session={session}
-            onLogout={() => setSession(null)}
+            onProfilePress={() => setModal({ screen: 'profile' })}
             onPotPress={(pot) => setModal({ screen: 'detail', pot })}
             onAddPress={() => setModal({ screen: 'add-pot' })}
             onCameraPress={(pot) => {

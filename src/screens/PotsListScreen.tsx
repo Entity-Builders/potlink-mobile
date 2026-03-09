@@ -40,7 +40,7 @@ const STATE_EMOJI: Record<string, string> = {
 interface PotsListScreenProps {
   session: Session | null;
   onPotPress: (pot: Pot) => void;
-  onLogout: () => void;
+  onProfilePress: () => void;
   onCameraPress?: (pot?: Pot) => void;
   onAddPress?: () => void;
   /** When true, shows a full plant collection list view instead of the home layout */
@@ -52,7 +52,7 @@ interface PotsListScreenProps {
 export const PotsListScreen = ({
   session,
   onPotPress,
-  onLogout,
+  onProfilePress,
   onCameraPress,
   onAddPress,
   collectionMode = false,
@@ -290,6 +290,10 @@ export const PotsListScreen = ({
                 <Text style={styles.collectionRowLocation}>
                   {item.location_type === 'indoor' ? '🏠' : '☀️'}
                 </Text>
+
+                <DiagnosisStatusDot
+                  lastDiagnosisDate={item.last_diagnosis_date}
+                />
               </TouchableOpacity>
             )}
           />
@@ -321,7 +325,10 @@ export const PotsListScreen = ({
             <Text style={styles.topBarLogo}>🪴</Text>
             <Text style={styles.topBarName}>Potlink</Text>
           </View>
-          <TouchableOpacity style={styles.avatarCircle} onPress={onLogout}>
+          <TouchableOpacity
+            style={styles.avatarCircle}
+            onPress={onProfilePress}
+          >
             <Text style={styles.avatarText}>
               {userName.charAt(0).toUpperCase()}
             </Text>
@@ -414,6 +421,34 @@ export const PotsListScreen = ({
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function getDiagnosisStatusColor(lastDiagnosisDate?: string | null): string {
+  if (!lastDiagnosisDate) return '#FF5252'; // Red (no analysis)
+
+  const now = new Date();
+  const diagnosisDate = new Date(lastDiagnosisDate);
+  const diffTime = Math.abs(now.getTime() - diagnosisDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 7) {
+    return '#4CAF50'; // Green (< 1 week)
+  } else if (diffDays <= 14) {
+    return '#FF9800'; // Orange (1-2 weeks)
+  } else {
+    return '#FF5252'; // Red (> 2 weeks)
+  }
+}
+
+function DiagnosisStatusDot({
+  lastDiagnosisDate,
+  style,
+}: {
+  lastDiagnosisDate?: string | null;
+  style?: any;
+}) {
+  const color = getDiagnosisStatusColor(lastDiagnosisDate);
+  return <View style={[styles.statusDot, { backgroundColor: color }, style]} />;
+}
+
 function PlantCard({ pot, onPress }: { pot: Pot; onPress: () => void }) {
   // Compute width for 2 columns with gaps
   const cardWidth = (SCREEN_WIDTH - 32 - 16) / 2;
@@ -445,6 +480,10 @@ function PlantCard({ pot, onPress }: { pot: Pot; onPress: () => void }) {
           {pot.species || 'Especie oculta'}
         </Text>
       </View>
+      <DiagnosisStatusDot
+        lastDiagnosisDate={pot.last_diagnosis_date}
+        style={styles.cardStatusDot}
+      />
     </TouchableOpacity>
   );
 }
@@ -802,5 +841,24 @@ const styles = StyleSheet.create({
   sheetActionDesc: {
     fontSize: 13,
     color: '#718096',
+  },
+
+  // ── Status Dot
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  cardStatusDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
 });
