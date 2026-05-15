@@ -4,6 +4,7 @@
   },
   "build": {
     "base": {
+      "corepack": true,
       "cache": {
         "key": "potlink-{{ checksum 'yarn.lock' }}",
         "paths": ["node_modules", "../../node_modules"]
