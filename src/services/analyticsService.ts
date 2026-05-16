@@ -18,17 +18,17 @@ export const getPostHogClient = () => posthogRNProvider.getClient();
 
 export function initAnalytics(): void {
   analytics.init({
-    apiKey: process.env.EXPO_PUBLIC_POTLINK_POSTHOG_API_KEY ?? '',
-    apiHost: process.env.EXPO_PUBLIC_POTLINK_POSTHOG_HOST,
+    apiKey: process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '',
+    apiHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
     // Disable in local dev to avoid polluting production data
-    disabled: !process.env.EXPO_PUBLIC_POTLINK_POSTHOG_API_KEY,
+    disabled: !process.env.EXPO_PUBLIC_POSTHOG_KEY,
   });
 
   // Tag every event with app context so we can filter by app in PostHog dashboard
   analytics.setGlobalProperties({
     app: 'potlink',
     platform: 'ios',
-    environment: process.env.EXPO_PUBLIC_POTLINK_POSTHOG_API_KEY
+    environment: process.env.EXPO_PUBLIC_POSTHOG_KEY
       ? 'production'
       : 'development',
   });
