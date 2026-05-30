@@ -63,32 +63,41 @@ function buildEasConfig() {
       version: '>= 7.0.0',
     },
     build: {
+      base: {
+        corepack: true,
+        ios: {
+          image: 'sdk-54',
+        },
+        android: {
+          image: 'sdk-54',
+        },
+      },
       development: {
+        extends: 'base',
         developmentClient: true,
         distribution: 'internal',
         channel: 'development',
-        node: '22.12.0',
         env: devEnv,
       },
       'development-simulator': {
+        extends: 'base',
         developmentClient: true,
         distribution: 'internal',
         channel: 'development',
-        node: '22.12.0',
         ios: {
           simulator: true,
         },
         env: devSimEnv,
       },
       preview: {
+        extends: 'base',
         distribution: 'internal',
         channel: 'preview',
-        node: '22.12.0',
         env: previewEnv,
       },
       production: {
+        extends: 'base',
         channel: 'production',
-        node: '22.12.0',
         env: productionEnv,
       },
     },

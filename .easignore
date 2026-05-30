@@ -3,8 +3,14 @@ node_modules/
 
 # ─── Other apps in the monorepo ────────────────────────────────
 ../../apps/PostalPeek/
+../../apps/baraja/
+../../apps/flowtranslate/
+../../apps/guita-control/
 ../../apps/minimal-money/
+../../apps/portfolio/
 ../../apps/promptly/
+../../apps/promptly-site/
+../../apps/shrinkle/
 ../../apps/tablia/
 ../../apps/tellee/
 ../../apps/zigzag/
@@ -32,7 +38,8 @@ dist/
 **/*.avi
 
 # ─── Docs & one-off scripts ─────────────────────────────────────
-../../.agent/
+../../.agents/
+../../.codex/
 ../../docs/
 ../../test-*.js
 

@@ -3,11 +3,20 @@
     "version": ">= 7.0.0"
   },
   "build": {
+    "base": {
+      "corepack": true,
+      "ios": {
+        "image": "sdk-54"
+      },
+      "android": {
+        "image": "sdk-54"
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "node": "22.12.0",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development",
         "EXPO_PUBLIC_SUPABASE_URL": "http://192.168.1.95:54325",
@@ -18,10 +27,10 @@
       }
     },
     "development-simulator": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "node": "22.12.0",
       "ios": {
         "simulator": true
       },
@@ -35,9 +44,9 @@
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "channel": "preview",
-      "node": "22.12.0",
       "env": {
         "APP_ENV": "preview",
         "EXPO_PUBLIC_POSTHOG_KEY": "phc_WL017ipD1NcKoVL1Xlu4t0yUiVw80clQnB3Nwii0XiT",
@@ -46,8 +55,8 @@
       }
     },
     "production": {
+      "extends": "base",
       "channel": "production",
-      "node": "22.12.0",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_POSTHOG_KEY": "phc_RyaZ4XENvd4LA6pSTZozOUyFPpogKiUGwMIldtemmvn",
