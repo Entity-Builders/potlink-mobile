@@ -15,8 +15,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { Pot, PotDiagnosisLog } from '@eb-packages/garden';
-import { diagnosePlant, sendDiagnosisChat } from '@eb-packages/logic';
+import type { Pot, PotDiagnosisLog } from '@entity-builders/garden';
+import { diagnosePlant, sendDiagnosisChat } from '@entity-builders/logic';
 
 interface DiagnosisDrawerProps {
   visible: boolean;

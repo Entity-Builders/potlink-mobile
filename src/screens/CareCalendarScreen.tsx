@@ -9,9 +9,9 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Screen } from '@eb-packages/ui';
-import { getAllUserCareSchedules, logCare } from '@eb-packages/logic';
-import type { CareSchedule } from '@eb-packages/garden';
+import { Screen } from '@entity-builders/ui';
+import { getAllUserCareSchedules, logCare } from '@entity-builders/logic';
+import type { CareSchedule } from '@entity-builders/garden';
 import { analytics, trackCareLogged } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 

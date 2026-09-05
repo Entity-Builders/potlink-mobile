@@ -1,5 +1,5 @@
-import { Analytics } from '@eb-packages/analytics';
-import { PostHogRNProvider } from '@eb-packages/analytics/src/posthog-rn-provider';
+import { Analytics } from '@entity-builders/analytics';
+import { PostHogRNProvider } from '@entity-builders/analytics/src/posthog-rn-provider';
 
 /**
  * Singleton analytics instance for Potlink Mobile.

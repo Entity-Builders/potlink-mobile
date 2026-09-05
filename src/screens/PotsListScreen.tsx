@@ -18,8 +18,8 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { getUserPots, getLinkedAccounts } from '@eb-packages/logic';
-import type { Pot } from '@eb-packages/garden';
+import { getUserPots, getLinkedAccounts } from '@entity-builders/logic';
+import type { Pot } from '@entity-builders/garden';
 import type { Session } from '@supabase/supabase-js';
 import { analytics } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';

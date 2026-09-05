@@ -17,9 +17,9 @@ import {
   extractPotMetadata,
   identifyPlant,
   createDefaultCareSchedules,
-} from '@eb-packages/logic';
-import type { PotFormData } from '@eb-packages/garden';
-import { VoiceInput, Screen } from '@eb-packages/ui';
+} from '@entity-builders/logic';
+import type { PotFormData } from '@entity-builders/garden';
+import { VoiceInput, Screen } from '@entity-builders/ui';
 import {
   analytics,
   trackPotCreated,

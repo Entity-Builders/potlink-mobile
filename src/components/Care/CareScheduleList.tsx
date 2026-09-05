@@ -6,8 +6,8 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import { getCareSchedules, logCare } from '@eb-packages/logic';
-import type { CareSchedule } from '@eb-packages/garden';
+import { getCareSchedules, logCare } from '@entity-builders/logic';
+import type { CareSchedule } from '@entity-builders/garden';
 import { Alert, TouchableOpacity } from 'react-native';
 
 interface CareScheduleListProps {

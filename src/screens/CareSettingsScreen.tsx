@@ -10,9 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Screen } from '@eb-packages/ui';
-import type { Pot, CareType } from '@eb-packages/garden';
-import { upsertCareSchedule } from '@eb-packages/logic';
+import { Screen } from '@entity-builders/ui';
+import type { Pot, CareType } from '@entity-builders/garden';
+import { upsertCareSchedule } from '@entity-builders/logic';
 import { analytics } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 

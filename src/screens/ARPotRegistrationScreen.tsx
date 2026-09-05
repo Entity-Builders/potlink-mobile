@@ -12,9 +12,9 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { identifyPlant } from '@eb-packages/logic';
-import { createPot, createDefaultCareSchedules } from '@eb-packages/logic';
-import type { PotFormData } from '@eb-packages/garden';
+import { identifyPlant } from '@entity-builders/logic';
+import { createPot, createDefaultCareSchedules } from '@entity-builders/logic';
+import type { PotFormData } from '@entity-builders/garden';
 import { ARGlassOverlay } from '../components/ARGlassOverlay';
 import {
   analytics,

@@ -14,9 +14,9 @@
     "ota:production": "node scripts/ota-production.js"
   },
   "dependencies": {
-    "@eb-packages/analytics": "*",
-    "@eb-packages/garden": "*",
-    "@eb-packages/ui": "*",
+    "@entity-builders/analytics": "*",
+    "@entity-builders/garden": "*",
+    "@entity-builders/ui": "*",
     "@gorhom/bottom-sheet": "^5.2.8",
     "expo": "~54.0.33",
     "expo-application": "~7.0.8",

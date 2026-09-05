@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { getCareHistory } from '@eb-packages/logic';
-import type { CareLog } from '@eb-packages/garden';
+import { getCareHistory } from '@entity-builders/logic';
+import type { CareLog } from '@entity-builders/garden';
 
 interface CareHistoryListProps {
   potId: string;

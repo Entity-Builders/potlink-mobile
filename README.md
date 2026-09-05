@@ -89,11 +89,11 @@ Launch
 | --------- | ------------------------------------------------------------------------ |
 | Framework | Expo (React Native)                                                      |
 | Backend   | Supabase (Auth + Postgres + Storage)                                     |
-| AI        | `@eb-packages/ai-services` (Gemini)                                      |
-| Logic     | `@eb-packages/logic` (`createPot`, `identifyPlant`, `getCareSchedules`…) |
-| Types     | `@eb-packages/garden` (`Pot`, `CareSchedule`, `SpeciesCareGuide`)        |
-| Shared UI | `@eb-packages/ui` (`Screen`, `SharedHeader`, `VoiceInput`)               |
-| Analytics | `@eb-packages/analytics` (PostHog)                                       |
+| AI        | `@entity-builders/ai-services` (Gemini)                                      |
+| Logic     | `@entity-builders/logic` (`createPot`, `identifyPlant`, `getCareSchedules`…) |
+| Types     | `@entity-builders/garden` (`Pot`, `CareSchedule`, `SpeciesCareGuide`)        |
+| Shared UI | `@entity-builders/ui` (`Screen`, `SharedHeader`, `VoiceInput`)               |
+| Analytics | `@entity-builders/analytics` (PostHog)                                       |
 
 ---
 

@@ -16,8 +16,8 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react-native';
-import type { Pot, PotDiagnosisLog } from '@eb-packages/garden';
-import { Screen } from '@eb-packages/ui';
+import type { Pot, PotDiagnosisLog } from '@entity-builders/garden';
+import { Screen } from '@entity-builders/ui';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 
 interface DiagnosisDetailScreenProps {

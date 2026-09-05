@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import type { CareSchedule, SpeciesCareGuide } from '@eb-packages/garden';
+import type { CareSchedule, SpeciesCareGuide } from '@entity-builders/garden';
 
 interface PlantAdvisorProps {
   species: string;

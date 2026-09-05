@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { AuthScreen as SharedAuthScreen, Screen } from '@eb-packages/ui';
+import { AuthScreen as SharedAuthScreen, Screen } from '@entity-builders/ui';
 
 interface AuthScreenProps {
   onNavigateToList?: () => void;

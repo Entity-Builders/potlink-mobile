@@ -1,13 +1,13 @@
 import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text } from 'react-native';
-import { supabase } from '@eb-packages/logic';
+import { supabase } from '@entity-builders/logic';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PotDetailScreen } from './src/screens/PotDetailScreen';
 import { PotEditScreen } from './src/screens/PotEditScreen';
-import type { Pot, PotDiagnosisLog } from '@eb-packages/garden';
+import type { Pot, PotDiagnosisLog } from '@entity-builders/garden';
 import { DiagnosisDetailScreen } from './src/screens/DiagnosisDetailScreen';
 import { NotificationService } from './src/services/NotificationService';
 import { analytics, initAnalytics } from './src/services/analyticsService';

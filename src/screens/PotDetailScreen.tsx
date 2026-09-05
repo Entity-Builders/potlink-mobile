@@ -22,14 +22,14 @@ import type {
   Pot,
   SpeciesCareGuide,
   PotDiagnosisLog,
-} from '@eb-packages/garden';
+} from '@entity-builders/garden';
 import {
   deletePot,
   getSpeciesCareGuide,
   getDiagnosisLogs,
   diagnosePlant,
-} from '@eb-packages/logic';
-import { Screen } from '@eb-packages/ui';
+} from '@entity-builders/logic';
+import { Screen } from '@entity-builders/ui';
 import { analytics, trackPotDeleted } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 import { DiagnosisDrawer } from '../components/DiagnosisDrawer';

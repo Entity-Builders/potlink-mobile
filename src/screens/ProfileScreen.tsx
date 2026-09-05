@@ -23,7 +23,7 @@ import {
   unlinkAccount,
   getLinkedAccounts,
   LinkedAccount,
-} from '@eb-packages/logic';
+} from '@entity-builders/logic';
 import { analytics } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 

@@ -13,10 +13,10 @@ import {
   Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { updatePot, uploadPotPhoto } from '@eb-packages/logic';
-import type { Pot } from '@eb-packages/garden';
-import { supabase } from '@eb-packages/logic';
-import { Screen } from '@eb-packages/ui';
+import { updatePot, uploadPotPhoto } from '@entity-builders/logic';
+import type { Pot } from '@entity-builders/garden';
+import { supabase } from '@entity-builders/logic';
+import { Screen } from '@entity-builders/ui';
 import { analytics, trackPotEdited } from '../services/analyticsService';
 import { useScreenLogger } from '../hooks/useScreenLogger';
 import { compressImageForUpload } from '../utils/imageUtils';

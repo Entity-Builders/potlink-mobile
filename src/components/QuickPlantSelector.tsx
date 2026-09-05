@@ -8,7 +8,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import type { Pot } from '@eb-packages/garden';
+import type { Pot } from '@entity-builders/garden';
 
 interface QuickPlantSelectorProps {
   visible: boolean;
