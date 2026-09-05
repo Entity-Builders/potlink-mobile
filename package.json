@@ -14,10 +14,10 @@
     "ota:production": "node scripts/ota-production.js"
   },
   "dependencies": {
-    "@entity-builders/analytics": "*",
-    "@entity-builders/garden": "*",
-    "@entity-builders/logic": "*",
-    "@entity-builders/ui": "*",
+    "@entity-builders/analytics": "^1.0.0",
+    "@entity-builders/garden": "^1.0.0",
+    "@entity-builders/logic": "^1.0.0",
+    "@entity-builders/ui": "^1.0.0",
     "@gorhom/bottom-sheet": "^5.2.8",
     "expo": "~54.0.33",
     "expo-application": "~7.0.8",
@@ -55,5 +55,10 @@
   "engines": {
     "node": ">=20.19.4"
   },
-  "private": true
+  "private": true,
+  "packageManager": "yarn@4.13.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Entity-Builders/potlink-mobile.git"
+  }
 }
